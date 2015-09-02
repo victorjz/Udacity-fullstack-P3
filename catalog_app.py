@@ -37,17 +37,38 @@ def categoryItems(category_name):
 @app.route('/catalog/<string:category_name>/<string:item_name>')
 def itemDescription(category_name, item_name):
     DB, dbcursor = connect()
+    # project guide indicates category name is not part of URL but keeping for now
+    # because it could help to create a back button
     # need to return an error page when manually typed URL contains an unknown
     # catalog, item, or catalog/item pair
     # tbd
     # assuming catalog/item pair exists
     querystring = "SELECT * FROM items WHERE name = %s;"
     dbcursor.execute(querystring, (item_name,))
-    item, description = dbcursor.fetchone() # list of tuples into a list
-
+    item, description = dbcursor.fetchone()
     DB.close()
     return render_template(
         'item_page.html', item=item, description=description)
+
+@app.route('/catalog/<string:item_name>/edit', methods=['GET', 'POST'])
+def itemEdit(item_name):
+    DB, dbcursor = connect()
+    # need to return an error page when manually typed URL contains an unknown
+    # catalog, item, or catalog/item pair
+    # tbd
+    # assuming catalog/item pair exists...
+
+    if request.method == 'POST':
+        DB.close()
+        return 'Under construction! <a href='+url_for('categories')+'>Home</a>'
+    else:
+        querystring = "SELECT * FROM items WHERE name = %s;"
+        dbcursor.execute(querystring, (item_name,))
+        item, description = dbcursor.fetchone()
+        DB.close()
+        return render_template(
+            'item_edit.html', item=item, description=description)
+
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
