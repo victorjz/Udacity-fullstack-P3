@@ -18,6 +18,6 @@ CREATE TABLE items
 
 CREATE TABLE category_items
 (
-  category text references categories not null,
-  item text references items not null
+  category text references categories on update cascade on delete cascade,
+  item text references items on update cascade on delete cascade
 );

@@ -17,11 +17,16 @@
 {% endwith %}
 
 
-<div>
+<form action= "{{url_for('itemEdit', item_name=item)}}" method = 'POST'>
 
-<p>{{description}}</p>
+<p>Name:</p>
+<input type = 'text' size='80' name = 'name' placeholder = '{{item}}'>
+<p>Description:</p>
+<input type = 'text' size='250' name = 'description' placeholder = '{{description}}'>
+<p>Confirm changes:</p>
+<input type='submit' value='Submit'>
 
-</div>
+<a href= '{{url_for('itemDescription', item_name=item)}}'>Cancel</a>
 
 
 <div>
