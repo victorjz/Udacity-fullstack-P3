@@ -1,6 +1,5 @@
-<html>
-
-<body>
+{% extends "catalog_base.html" %}
+{% block body %}
 
 <h1>{{item}} Edit</h1>
 
@@ -16,18 +15,38 @@
 {% endif %}
 {% endwith %}
 
+<p>If a new value is not entered, current value will be retained.</p>
 
 <form action= "{{url_for('itemEdit', item_name=item)}}" method = 'POST'>
 
-<p>Name:</p>
-<input type = 'text' size='80' name = 'name' placeholder = '{{item}}'>
-<p>Description:</p>
-<input type = 'text' size='250' name = 'description' placeholder = '{{description}}'>
-<p>Confirm changes:</p>
-<input type='submit' value='Submit'>
+<dl>
+  <dt>Enter new name:
+  <dd><input type = 'text' size='80' name = 'name' placeholder = '{{item}}'></p>
+  <dt>Enter new description:
+  <dd><textarea rows='4' cols='80' name = 'description' placeholder = '{{description}}'></textarea></p>
+</dl>
 
+Categories:<br>
+<table>
+{% for row in categorytable %}
+<tr>
+  {% for column in row %}
+  {% if column in itemcategories %}
+  <td><input type='checkbox' name='categories' checked value='{{column}}'>{{column}}</td>
+  {% else %}
+  <td><input type='checkbox' name='categories' value='{{column}}'>{{column}}</td>
+  {% endif %}
+  {% endfor %}
+</tr>
+{% endfor %}
+<table>
+
+<p>
+  Click Submit to confirm changes:
+  <input type='submit' value='Submit'>
+</p>
+</form>
 <a href= '{{url_for('itemDescription', item_name=item)}}'>Cancel</a>
-
 
 <div>
 
@@ -36,6 +55,4 @@
 </div>
 
 
-</body>
-
-</html>
+{% endblock %}

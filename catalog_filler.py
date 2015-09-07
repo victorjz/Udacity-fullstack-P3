@@ -10,7 +10,8 @@ def connect():
     return DB, dbcursor
 
 # define sample values for categories, item, descriptions
-categories = ["Electronics", "Kitchen", "Video games", "Luggage", "Camera"]
+categories = ["Electronics", "Kitchen", "Video games", "Luggage", "Camera",
+    "Software title"]
 items = [
     "Sony PlayStation 4",
     "Logitech UE Megaboom",
@@ -19,7 +20,9 @@ items = [
     "The Witcher III The Wild Hunt",
     "Case Logic Griffith Park backpack",
     "Case Logic Reflexion cross-body bag",
-    "Sony RX100 MK IV"]
+    "Sony RX100 MK IV",
+    "Turbo Tax 2016 Federal",
+    "Microsoft Windows 10 OEM Installation"]
 descriptions = [
     "The latest video game system from Sony.",
     "Incredible sound booms via bluetooth connections of up to 100 ft away.",
@@ -28,12 +31,14 @@ descriptions = [
     "Journey far and wide as a mutated monster hunter in search of his star-crossed adopted daughter",
     "Black and green accents with compartments for laptop, tablet, and power supply.",
     "Adjustable storage walls and a tablet pocket keep you organized and stylish.",
-    "This fourth iteration introduces 4k video recording with the same great superior optics and rotating view screen to make the best handheld camera."]
+    "This fourth iteration introduces 4k video recording with the same great superior optics and rotating view screen to make the best handheld camera.",
+    "Your tax accountant in a box.",
+    "All the power of the latest Microsoft operating system, none of the packaging"]
 item_desc = zip(items, descriptions) # combine for later easy DB writes
 
-# define item/category pairs. One item may belong to multiple categories.
-category_pairing = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4]
-item_pairing =     [0, 1, 2, 7, 2, 3, 0, 4, 5, 6, 6, 7]
+# define category/item pairs. One item may belong to multiple categories.
+category_pairing = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5]
+item_pairing =     [0, 1, 2, 7, 2, 3, 0, 4, 5, 6, 6, 7, 4, 8, 9]
 
 category_items = []
 for i in zip(category_pairing, item_pairing):
