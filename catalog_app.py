@@ -22,11 +22,15 @@ def categoryItems(category_name):
         'category_page.html', category=category_name, items=items)
 
 @app.route('/catalog/<string:item_name>')
-def itemDescription(item_name):
+def itemDetails(item_name):
     description = getItemDescription(item_name)
 
+    itemcategories = getItemCategories(item_name)
+    cat_table = htmlTable(itemcategories, min(5, len(itemcategories)))
+
     return render_template(
-        'item_page.html', item=item_name, description=description)
+        'item_page.html', item=item_name, description=description,
+        itemcattable=cat_table)
 
 @app.route('/catalog/<string:item_name>/edit', methods=['GET', 'POST'])
 def itemEdit(item_name):
