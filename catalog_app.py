@@ -32,6 +32,33 @@ def itemDetails(item_name):
         'item_page.html', item=item_name, description=description,
         itemcattable=cat_table)
 
+@app.route('/catalog/newitem', methods=['GET', 'POST'])
+def itemNew():
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        categories = request.form.getlist('categories')
+
+        # check if all form elements filled and if not redirect
+
+        DB, dbcursor = connect()
+        querystring = "INSERT INTO items VALUES (%s, %s);"
+        params = (name, description)
+        dbcursor.execute(querystring, params)
+
+        querystring = "INSERT INTO category_items VALUES (%s, %s);"
+        for i in categories:
+            params = (i, name)
+            dbcursor.execute(querystring, params)
+
+        DB.commit()
+        DB.close()
+        return 'Under construction! <a href='+url_for('categories')+'>Home</a>'
+    else: # the request method is GET
+        categories = getCategoriesList()
+        cat_table = htmlTable(categories, min(5, len(categories)))
+        return render_template('item_new.html', categorytable=cat_table)
+
 @app.route('/catalog/<string:item_name>/edit', methods=['GET', 'POST'])
 def itemEdit(item_name):
 
@@ -42,7 +69,7 @@ def itemEdit(item_name):
         if request.form['description']:
             desc_update = request.form['description']
             # update the description
-            querystring = "UPDATE items SET description=%s WHERE name=%s"
+            querystring = "UPDATE items SET description=%s WHERE name=%s;"
             dbcursor.execute(querystring, (desc_update, item_name))
 
         if request.form['categories']:
@@ -52,12 +79,12 @@ def itemEdit(item_name):
             toadd = [i for i in formcategories if i not in itemcategories]
             toremove = [i for i in itemcategories if i not in formcategories]
 
-            querystring = "INSERT INTO category_items VALUES (%s, %s)"
+            querystring = "INSERT INTO category_items VALUES (%s, %s);"
             for i in toadd:
                 params = (i, item_name)
                 dbcursor.execute(querystring, params)
 
-            querystring = "DELETE FROM category_items WHERE category=%s AND item=%s"
+            querystring = "DELETE FROM category_items WHERE category=%s AND item=%s;"
             for i in toremove:
                 params = (i, item_name)
                 dbcursor.execute(querystring, params)
@@ -65,7 +92,7 @@ def itemEdit(item_name):
         if request.form['name']:
             item_update = request.form['name']
             # update the item; this cascades to dependent table
-            querystring = "UPDATE items SET name=%s WHERE name=%s"
+            querystring = "UPDATE items SET name=%s WHERE name=%s;"
             dbcursor.execute(querystring, (item_update, item_name))
 
         DB.commit()

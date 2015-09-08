@@ -1,0 +1,47 @@
+{% extends "catalog_base.html" %}
+{% block body %}
+
+<h1>Creating a New Item</h1>
+
+<!--MESSAGE FLASHING EXAMPLE -->
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+
+<ul>
+{% for message in messages %}
+  <li><strong>{{message}}</strong></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+
+<p>Item name and description required.</p>
+
+<form action= "{{url_for('itemNew')}}" method = 'POST'>
+
+<dl>
+  <dt>Enter new name:
+  <dd><input type = 'text' size='80' name = 'name'></p>
+  <dt>Enter new description:
+  <dd><textarea rows='4' cols='80' name = 'description'></textarea></p>
+</dl>
+
+At least one category required:<br>
+<table>
+{% for row in categorytable %}
+<tr>
+  {% for column in row %}
+  <td><input type='checkbox' name='categories' value='{{column}}'>{{column}}</td>
+  {% endfor %}
+</tr>
+{% endfor %}
+<table>
+
+<p>
+  Click Submit to confirm changes:
+  <input type='submit' value='Submit'>
+</p>
+</form>
+<a href= '{{url_for('categories')}}'>Cancel</a>
+
+{% endblock %}
