@@ -4,21 +4,10 @@ import psycopg2
 app = Flask(__name__)
 # IMPLEMENT BREAD CRUMBS AS A GLOBAL STACK
 # BEWARE OF MANUALLY TYPED URLS
-def connect():
-    """Connect to the PostgreSQL database.  Returns a database connection."""
-    DB = psycopg2.connect("dbname=catalog")
-    dbcursor = DB.cursor()
-    return DB, dbcursor
-
 @app.route('/')
 @app.route('/catalog/')
 def categories():
-    DB, dbcursor = connect()
-    querystring = "SELECT * FROM categories;"
-    dbcursor.execute(querystring)
-    categories = [i[0] for i in dbcursor.fetchall()]
-
-    DB.close()
+    categories = getCategoriesList()
     return render_template('catalog_page.html', categories=categories)
 
 @app.route('/catalog/<string:category_name>/items')
@@ -34,13 +23,10 @@ def categoryItems(category_name):
 
 @app.route('/catalog/<string:item_name>')
 def itemDescription(item_name):
-    DB, dbcursor = connect()
-    querystring = "SELECT * FROM items WHERE name = %s;"
-    dbcursor.execute(querystring, (item_name,))
-    item, description = dbcursor.fetchone()
-    DB.close()
+    description = getItemDescription(item_name)
+
     return render_template(
-        'item_page.html', item=item, description=description)
+        'item_page.html', item=item_name, description=description)
 
 @app.route('/catalog/<string:item_name>/edit', methods=['GET', 'POST'])
 def itemEdit(item_name):
@@ -55,10 +41,22 @@ def itemEdit(item_name):
             querystring = "UPDATE items SET description=%s WHERE name=%s"
             dbcursor.execute(querystring, (desc_update, item_name))
 
-        # if request.form['categories']
-        # will likely have to check which categories are already valid for the
-        # item and remove any missing from the form and add any missing that are
-        # on the form
+        if request.form['categories']:
+            formcategories = request.form.getlist('categories')
+            itemcategories = getItemCategories(item_name)
+
+            toadd = [i for i in formcategories if i not in itemcategories]
+            toremove = [i for i in itemcategories if i not in formcategories]
+
+            querystring = "INSERT INTO category_items VALUES (%s, %s)"
+            for i in toadd:
+                params = (i, item_name)
+                dbcursor.execute(querystring, params)
+
+            querystring = "DELETE FROM category_items WHERE category=%s AND item=%s"
+            for i in toremove:
+                params = (i, item_name)
+                dbcursor.execute(querystring, params)
 
         if request.form['name']:
             item_update = request.form['name']
@@ -69,34 +67,59 @@ def itemEdit(item_name):
         DB.commit()
         DB.close()
         return 'Under construction! <a href='+url_for('categories')+'>Home</a>'
-    else:
-        DB, dbcursor = connect()
-        # fetch the description to display as form placeholder
-        querystring = "SELECT * FROM items WHERE name = %s;"
-        dbcursor.execute(querystring, (item_name,))
-        item, description = dbcursor.fetchone()
+    else: # the request method is GET
+        # fetch the item description and associated categories
+        description = getItemDescription(item_name)
+        itemcategories = getItemCategories(item_name)
 
-        # fetch the categories to display as checkboxes
-        querystring = "SELECT name FROM categories ORDER BY name;"
-        dbcursor.execute(querystring)
-        categories = dbcursor.fetchall() # list of tuples
-        categories = list(zip(*categories)[0]) # make a flat list
-        cat_table = htmlRowsList(categories, min(5, len(categories)))
+        # fetch the categories as a table to display as checkboxes
+        categories = getCategoriesList()
+        cat_table = htmlTable(categories, min(5, len(categories)))
 
-        # fetch the categories that this item belongs to
-        querystring  = "SELECT category FROM category_items WHERE item=%s;"
-        dbcursor.execute(querystring, (item_name,))
-        itemcategories = dbcursor.fetchall() # list of tuples
-        itemcategories = list(zip(*itemcategories)[0]) # make a flat list
-        DB.close()
         return render_template(
-            'item_edit.html', item=item, description=description,
+            'item_edit.html', item=item_name, description=description,
             categorytable=cat_table, itemcategories=itemcategories)
 
-def htmlRowsList(flatlist, numrows):
+def connect():
+    """Connect to the PostgreSQL database.  Returns a database connection."""
+    DB = psycopg2.connect("dbname=catalog")
+    dbcursor = DB.cursor()
+    return DB, dbcursor
+
+def getItemDescription(item_name):
+    """Returns the item description and the categories it belongs to."""
+    DB, dbcursor = connect()
+    # fetch the description
+    querystring = "SELECT description FROM items WHERE name = %s;"
+    dbcursor.execute(querystring, (item_name,))
+    description = dbcursor.fetchone()[0]
+
+    DB.close()
+    return description
+
+def getItemCategories(item_name):
+    """Returns the categories that this item blongs to in a list."""
+    DB, dbcursor = connect()
+    querystring  = "SELECT category FROM category_items WHERE item=%s;"
+    dbcursor.execute(querystring, (item_name,))
+    itemcategories = [i[0] for i in dbcursor.fetchall()] # flatten list of tuple
+
+    DB.close()
+    return itemcategories
+
+def getCategoriesList():
+    """Retrieves a list of all available categories."""
+    DB, dbcursor = connect()
+    querystring = "SELECT name FROM categories ORDER BY name;"
+    dbcursor.execute(querystring)
+    categories = [i[0] for i in dbcursor.fetchall()] # flatten list of tuple
+
+    DB.close()
+    return categories
+
+def htmlTable(flatlist, numrows):
     """Converts a flat list into list of sublists ordered for an HTML table."""
     return [flatlist[i::numrows] for i in range(0, numrows)]
-
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
