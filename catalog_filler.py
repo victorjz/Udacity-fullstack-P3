@@ -36,19 +36,18 @@ descriptions = [
     "All the power of the latest Microsoft operating system, none of the packaging"]
 item_desc = zip(items, descriptions) # combine for later easy DB writes
 
-# IMPROVE this by using index(), tuples, and multi-indexed for loops
 # define category/item pairs. One item may belong to multiple categories.
 category_pairing = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5]
 item_pairing =     [0, 1, 2, 7, 2, 3, 0, 4, 5, 6, 6, 7, 4, 8, 9]
 
 category_items = []
-for i in zip(category_pairing, item_pairing):
-    category_items.append((categories[i[0]], items[i[1]]))
+for c, i in zip(category_pairing, item_pairing):
+    category_items.append((categories[c], items[i]))
 
 # populate DB
 DB, dbcursor = connect()
 
-# clear the database in case it already containes values
+# clear the database in case it already contains values
 dbcursor.execute("DELETE FROM category_items;")
 dbcursor.execute("DELETE FROM categories;")
 dbcursor.execute("DELETE FROM items;")
