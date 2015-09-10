@@ -40,12 +40,20 @@ def itemNew():
         categories = request.form.getlist('categories')
 
         # check if all form elements filled and if not redirect
+        formgood = name and description and categories
+        if not formgood:
+            flash("Error. All form fields should have a value.")
+            return redirect(url_for('itemNew'))
 
+        # only reach here if all form fields filled in
         DB, dbcursor = connect()
+
+        # create item
         querystring = "INSERT INTO items VALUES (%s, %s);"
         params = (name, description)
         dbcursor.execute(querystring, params)
 
+        # associate item with selected categories
         querystring = "INSERT INTO category_items VALUES (%s, %s);"
         for i in categories:
             params = (i, name)
@@ -53,8 +61,10 @@ def itemNew():
 
         DB.commit()
         DB.close()
-        return 'Under construction! <a href='+url_for('categories')+'>Home</a>'
+        flash("Item has been created.")
+        return redirect(url_for('categories'))
     else: # the request method is GET
+        # get all possible categories for the checkboxes stored as a table
         categories = getCategoriesList()
         cat_table = htmlTable(categories, min(5, len(categories)))
         return render_template('item_new.html', categorytable=cat_table)
@@ -63,41 +73,52 @@ def itemNew():
 def itemEdit(item_name):
 
     if request.method == 'POST':
-        DB, dbcursor = connect()
+        # check if at least one category checked or else try again
+        if not request.form.getlist('categories'):
+            flash("Error. At least one category must be checked.")
+            return redirect(url_for('itemEdit', item_name=item_name))
+
+        # only reach here if at least one category checked
         # update item name last or else you could lose the way to look up the
-        # item before you can update everything else
-        if request.form['description']:
-            desc_update = request.form['description']
-            # update the description
+        #   item before you can update everything else
+        DB, dbcursor = connect()
+
+        # update categories if necessary
+        formcategories = request.form.getlist('categories')
+        itemcategories = getItemCategories(item_name)
+
+        # compare the two lists and find what needs to be added or removed
+        toadd = [i for i in formcategories if i not in itemcategories]
+        toremove = [i for i in itemcategories if i not in formcategories]
+
+        querystring = "INSERT INTO category_items VALUES (%s, %s);"
+        for i in toadd:
+            params = (i, item_name)
+            dbcursor.execute(querystring, params)
+
+        querystring = "DELETE FROM category_items WHERE category=%s AND item=%s;"
+        for i in toremove:
+            params = (i, item_name)
+            dbcursor.execute(querystring, params)
+
+        # update item description if form field is filled in
+        desc_update = request.form['description']
+        if desc_update:
             querystring = "UPDATE items SET description=%s WHERE name=%s;"
-            dbcursor.execute(querystring, (desc_update, item_name))
+            params = (desc_update, item_name)
+            dbcursor.execute(querystring, params)
 
-        if request.form['categories']:
-            formcategories = request.form.getlist('categories')
-            itemcategories = getItemCategories(item_name)
-
-            toadd = [i for i in formcategories if i not in itemcategories]
-            toremove = [i for i in itemcategories if i not in formcategories]
-
-            querystring = "INSERT INTO category_items VALUES (%s, %s);"
-            for i in toadd:
-                params = (i, item_name)
-                dbcursor.execute(querystring, params)
-
-            querystring = "DELETE FROM category_items WHERE category=%s AND item=%s;"
-            for i in toremove:
-                params = (i, item_name)
-                dbcursor.execute(querystring, params)
-
-        if request.form['name']:
-            item_update = request.form['name']
-            # update the item; this cascades to dependent table
+        # update item name if form field is filled in; cascades dependent table
+        item_update = request.form['name']
+        if item_update:
             querystring = "UPDATE items SET name=%s WHERE name=%s;"
-            dbcursor.execute(querystring, (item_update, item_name))
+            params = (item_update, item_name)
+            dbcursor.execute(querystring, params)
 
         DB.commit()
         DB.close()
-        return 'Under construction! <a href='+url_for('categories')+'>Home</a>'
+        flash("Item has been updated.")
+        return redirect(url_for('categories'))
     else: # the request method is GET
         # fetch the item description and associated categories
         description = getItemDescription(item_name)

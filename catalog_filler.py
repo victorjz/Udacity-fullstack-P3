@@ -36,6 +36,7 @@ descriptions = [
     "All the power of the latest Microsoft operating system, none of the packaging"]
 item_desc = zip(items, descriptions) # combine for later easy DB writes
 
+# IMPROVE this by using index(), tuples, and multi-indexed for loops
 # define category/item pairs. One item may belong to multiple categories.
 category_pairing = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5]
 item_pairing =     [0, 1, 2, 7, 2, 3, 0, 4, 5, 6, 6, 7, 4, 8, 9]
