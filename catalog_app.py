@@ -45,7 +45,13 @@ def itemNew():
             flash("Error. All form fields should have a value.")
             return redirect(url_for('itemNew'))
 
-        # only reach here if all form fields filled in
+        # check if item name is unique
+        querystring = "SELECT name FROM items WHERE name=%s;"
+        if checkExists(querystring, name):
+            flash("Error. An item with that name already exists.")
+            return redirect(url_for('itemNew'))
+
+        # only reach here if all form fields filled in and name unique
         DB, dbcursor = connect()
 
         # create item
@@ -78,7 +84,17 @@ def itemEdit(item_name):
             flash("Error. At least one category must be checked.")
             return redirect(url_for('itemEdit', item_name=item_name))
 
-        # only reach here if at least one category checked
+        # gather other form elements and check for unique item name
+        item_update = request.form['name']
+        desc_update = request.form['description']
+        if item_update: # only check if the form was not blank
+            querystring = "SELECT name FROM items WHERE name=%s;"
+            if checkExists(querystring, item_update):
+                flash("Error. An item with that name already exists.")
+                return redirect(url_for('itemEdit', item_name=item_name))
+        # else the value is blank or otherwise fine
+
+        # only reach here if the form and values entered are error-free
         # update item name last or else you could lose the way to look up the
         #   item before you can update everything else
         DB, dbcursor = connect()
@@ -102,14 +118,12 @@ def itemEdit(item_name):
             dbcursor.execute(querystring, params)
 
         # update item description if form field is filled in
-        desc_update = request.form['description']
         if desc_update:
             querystring = "UPDATE items SET description=%s WHERE name=%s;"
             params = (desc_update, item_name)
             dbcursor.execute(querystring, params)
 
         # update item name if form field is filled in; cascades dependent table
-        item_update = request.form['name']
         if item_update:
             querystring = "UPDATE items SET name=%s WHERE name=%s;"
             params = (item_update, item_name)
@@ -170,6 +184,18 @@ def getCategoriesList():
 
     DB.close()
     return categories
+
+def checkExists(querystring, value):
+    DB, dbcursor = connect()
+    params = (value,)
+    dbcursor.execute(querystring, params)
+    valuelist = [i[0] for i in dbcursor.fetchall()] # flatten list of tuple
+    DB.close()
+
+    if value in valuelist:
+        return True
+    else:
+        return False
 
 def htmlTable(flatlist, numrows):
     """Converts a flat list into list of sublists ordered for an HTML table."""
