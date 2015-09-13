@@ -117,6 +117,8 @@ def itemEdit(item_name):
 
         DB.commit()
         DB.close()
+
+        # Provide a message upon next page load indicating success
         flash("Item has been updated.")
         return redirect(url_for('categories'))
     else: # the request method is GET
