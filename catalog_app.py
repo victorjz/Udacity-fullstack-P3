@@ -32,7 +32,7 @@ def itemDetails(item_name):
         'item_page.html', item=item_name, description=description,
         itemcattable=cat_table)
 
-@app.route('/catalog/newitem', methods=['GET', 'POST'])
+@app.route('/catalog/new', methods=['GET', 'POST'])
 def itemNew():
     if request.method == 'POST':
         name = request.form['name']
@@ -77,7 +77,6 @@ def itemNew():
 
 @app.route('/catalog/<string:item_name>/edit', methods=['GET', 'POST'])
 def itemEdit(item_name):
-
     if request.method == 'POST':
         # check if at least one category checked or else try again
         if not request.form.getlist('categories'):
@@ -148,6 +147,38 @@ def itemEdit(item_name):
             'item_edit.html', item=item_name, description=description,
             categorytable=cat_table, itemcategories=itemcategories)
 
+@app.route('/catalog/<string:item_name>/delete', methods=['GET', 'POST'])
+def itemDelete(item_name):
+    if request.method == 'POST':
+        # check that the item exists
+        querystring = "SELECT name FROM items WHERE name=%s;"
+        if not checkExists(querystring, item_name):
+            flash("The item you tried to delete doesn't exist.")
+            return redirect(url_for('categories'))
+        else: # the item exists. delete it
+            DB, dbcursor = connect()
+            querystring = "DELETE FROM items WHERE name=%s;"
+            params = (item_name,)
+            dbcursor.execute(querystring, params)
+            DB.commit()
+            DB.close()
+
+        flash(item_name + " was deleted.")
+        return redirect(url_for('categories'))
+    else: # the request method is GET
+        # assuming item is real...
+        flash("You are about to delete the following item.")
+        return render_template('item_delete.html', item=item_name)
+
+@app.route('/catalog/editcategories', methods=['GET', 'POST'])
+def editCategories():
+    if request.method == 'POST':
+        return "Under construction!"
+    else: # request method is GET
+        categories = getCategoriesList()
+        cat_table = htmlTable(categories, min(5, len(categories)))
+        return render_template('category_edit.html', categorytable=cat_table)
+
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
     DB = psycopg2.connect("dbname=catalog")
@@ -155,7 +186,7 @@ def connect():
     return DB, dbcursor
 
 def getItemDescription(item_name):
-    """Returns the item description and the categories it belongs to."""
+    """Returns the item description."""
     DB, dbcursor = connect()
     # fetch the description
     querystring = "SELECT description FROM items WHERE name = %s;"

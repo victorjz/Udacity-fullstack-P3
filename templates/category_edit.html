@@ -1,0 +1,34 @@
+{% extends "catalog_base.html" %}
+{% block body %}
+
+<h1>Editing Categories</h1>
+
+<form action= "{{url_for('editCategories')}}" method = 'POST'>
+
+Uncheck any categories and they will be removed:<br>
+<table>
+{% for row in categorytable %}
+<tr>
+  {% for column in row %}
+  <td><input type='checkbox' name='categories' checked value='{{column}}'>{{column}}</td>
+  {% endfor %}
+</tr>
+{% endfor %}
+<table>
+
+<br>
+Enter the names of any new categories. Separate each with a new line:<br>
+(Up to 10.)<br>
+<textarea rows='10' cols='80' name = 'new_categories'></textarea></p>
+
+<p>
+  Click Submit to confirm changes:
+  <input type='submit' value='Submit'>
+</p>
+</form>
+
+<div>
+<p><a href='{{url_for('categories')}}'>Cancel and go back to catalog</a></p>
+</div>
+
+{% endblock %}
