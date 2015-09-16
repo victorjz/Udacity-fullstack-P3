@@ -170,13 +170,40 @@ def itemDelete(item_name):
         flash("You are about to delete the following item.")
         return render_template('item_delete.html', item=item_name)
 
-@app.route('/catalog/editcategories', methods=['GET', 'POST'])
-def editCategories():
+@app.route('/catalog/categoriesEdit', methods=['GET', 'POST'])
+def categoriesEdit():
     if request.method == 'POST':
-        return "Under construction!"
+        all_cat = getCategoriesList() # all categories
+        keep_cat = request.form.getlist('categories') # categories to keep
+        remove_cat = [i for i in all_cat if i not in keep_cat]
+
+        add_cat = request.form['add_categories'] # manually typed categories
+        add_cat = add_cat.split('\n') # make new lines into a list
+        add_cat = [i.strip() for i in add_cat] # trailing/leading whitespace
+
+        print add_cat
+        print remove_cat
+
+        DB, dbcursor = connect()
+        querystring = "DELETE FROM categories WHERE name=%s;"
+        for i in remove_cat:
+            params = (i,)
+            dbcursor.execute(querystring, params)
+
+        querystring = "INSERT INTO categories VALUES (%s);"
+        for i in add_cat:
+            if i: # skip empty strings
+                params = (i,)
+                dbcursor.execute(querystring, params)
+
+        DB.commit()
+        DB.close()
+        flash("Categories removed or added accordingly.")
+        return redirect(url_for('categories'))
     else: # request method is GET
         categories = getCategoriesList()
         cat_table = htmlTable(categories, min(5, len(categories)))
+        flash("Removing categories containing items will move items to an uncategorized section.")
         return render_template('category_edit.html', categorytable=cat_table)
 
 def connect():

@@ -3,7 +3,7 @@
 
 <h1>Editing Categories</h1>
 
-<form action= "{{url_for('editCategories')}}" method = 'POST'>
+<form action= "{{url_for('categoriesEdit')}}" method = 'POST'>
 
 Uncheck any categories and they will be removed:<br>
 <table>
@@ -19,7 +19,7 @@ Uncheck any categories and they will be removed:<br>
 <br>
 Enter the names of any new categories. Separate each with a new line:<br>
 (Up to 10.)<br>
-<textarea rows='10' cols='80' name = 'new_categories'></textarea></p>
+<textarea rows='10' cols='80' name='add_categories'></textarea></p>
 
 <p>
   Click Submit to confirm changes:
