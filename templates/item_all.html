@@ -1,0 +1,32 @@
+{% extends "catalog_base.html" %}
+{% block body %}
+
+<h1>All items and associated categories</h1>
+
+<table>
+<tr>
+  <td>Items</td>
+  <td>Categories</td>
+</tr>
+{% for i, j in itemcatpairs %}
+<tr>
+  <td><a href='{{url_for('itemDetails', item_name=i)}}'>{{i}}</a></td>
+  <td>
+  {% if j == [] %}
+  No categories!
+  {% else %}
+    {% for c in j %}
+      <a href='{{url_for('categoryItems', category_name=c)}}'>{{c}}</a>&nbsp;
+    {% endfor %}
+  {% endif %}
+  </td>
+</tr>
+{% endfor %}
+<table>
+
+
+<div>
+<p><a href='{{url_for('categories')}}'>Back to catalog</a></p>
+</div>
+
+{% endblock %}

@@ -21,6 +21,23 @@ def categoryItems(category_name):
     return render_template(
         'category_page.html', category=category_name, items=items)
 
+@app.route('/catalog/items')
+def itemAll():
+    """Displays all items and their associated categories"""
+    DB, dbcursor = connect()
+    querystring = "SELECT name FROM items;"
+    dbcursor.execute(querystring)
+    allitems = [i[0] for i in dbcursor.fetchall()] # list of tuples into a list
+
+    itemcatlist = [] # list of list of categories for each item
+    for i in allitems:
+        itemcatlist.append(getItemCategories(i)) # even if i is an empty list
+
+    itemcatpairs = zip(allitems, itemcatlist)
+
+    DB.close()
+    return render_template('item_all.html', itemcatpairs=itemcatpairs)
+
 @app.route('/catalog/<string:item_name>')
 def itemDetails(item_name):
     description = getItemDescription(item_name)
@@ -180,10 +197,16 @@ def categoriesEdit():
         add_cat = request.form['add_categories'] # manually typed categories
         add_cat = add_cat.split('\n') # make new lines into a list
         add_cat = [i.strip() for i in add_cat] # trailing/leading whitespace
+        add_cat = set(add_cat) # unique entries only
+        if '' in add_cat: add_cat.remove('') # remove empty string
 
-        print add_cat
-        print remove_cat
+        # Check that categories to be added don't already exist
+        for i in add_cat:
+            if i in all_cat:
+                flash("One or more of the categories to add already exists.")
+                return redirect(url_for('categoriesEdit'))
 
+        # Only reach this point if typed categories are unique (or empty)
         DB, dbcursor = connect()
         querystring = "DELETE FROM categories WHERE name=%s;"
         for i in remove_cat:
@@ -192,9 +215,8 @@ def categoriesEdit():
 
         querystring = "INSERT INTO categories VALUES (%s);"
         for i in add_cat:
-            if i: # skip empty strings
-                params = (i,)
-                dbcursor.execute(querystring, params)
+            params = (i,)
+            dbcursor.execute(querystring, params)
 
         DB.commit()
         DB.close()
@@ -203,7 +225,7 @@ def categoriesEdit():
     else: # request method is GET
         categories = getCategoriesList()
         cat_table = htmlTable(categories, min(5, len(categories)))
-        flash("Removing categories containing items will move items to an uncategorized section.")
+        flash("If removing a category causes an item to have no category, it will only be viewable on the all items page.")
         return render_template('category_edit.html', categorytable=cat_table)
 
 def connect():
@@ -224,7 +246,7 @@ def getItemDescription(item_name):
     return description
 
 def getItemCategories(item_name):
-    """Returns the categories that this item blongs to in a list."""
+    """Returns the categories that this item belongs to in a list."""
     DB, dbcursor = connect()
     querystring  = "SELECT category FROM category_items WHERE item=%s;"
     dbcursor.execute(querystring, (item_name,))
