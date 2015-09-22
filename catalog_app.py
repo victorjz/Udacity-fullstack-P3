@@ -1,48 +1,47 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 import psycopg2
 
+#The following global variables are intended as constants
+QUERY_ITEM_ONE = "SELECT name FROM items WHERE name=%s"
+QUERY_ITEM_DESC = "SELECT description FROM items WHERE name=%s;"
+QUERY_ITEM_CAT = "SELECT category FROM category_items WHERE item=%s;"
+QUERY_ALL_CAT = "SELECT name FROM categories ORDER BY name;"
+
 app = Flask(__name__)
 # IMPLEMENT BREAD CRUMBS AS A GLOBAL STACK
 # BEWARE OF MANUALLY TYPED URLS
 @app.route('/')
 @app.route('/catalog/')
 def categories():
-    categories = getCategoriesList()
+    categories = getDBvalues(QUERY_ALL_CAT)
     return render_template('catalog_page.html', categories=categories)
 
 @app.route('/catalog/<string:category_name>/items')
 def categoryItems(category_name):
-    DB, dbcursor = connect()
     querystring = "SELECT item FROM category_items WHERE category = %s;"
-    dbcursor.execute(querystring, (category_name,))
-    items = [i[0] for i in dbcursor.fetchall()] # list of tuples into a list
+    items = getDBvalues(querystring, category_name)
 
-    DB.close()
     return render_template(
         'category_page.html', category=category_name, items=items)
 
 @app.route('/catalog/items')
 def itemAll():
     """Displays all items and their associated categories"""
-    DB, dbcursor = connect()
     querystring = "SELECT name FROM items;"
-    dbcursor.execute(querystring)
-    allitems = [i[0] for i in dbcursor.fetchall()] # list of tuples into a list
+    allitems = getDBvalues(querystring)
 
     itemcatlist = [] # list of list of categories for each item
     for i in allitems:
-        itemcatlist.append(getItemCategories(i)) # even if i is an empty list
+        itemcatlist.append(getDBvalues(QUERY_ITEM_CAT, i)) # even if i is an empty
 
     itemcatpairs = zip(allitems, itemcatlist)
 
-    DB.close()
     return render_template('item_all.html', itemcatpairs=itemcatpairs)
 
 @app.route('/catalog/<string:item_name>')
 def itemDetails(item_name):
-    description = getItemDescription(item_name)
-
-    itemcategories = getItemCategories(item_name)
+    description = getDBvalues(QUERY_ITEM_DESC, item_name, True)
+    itemcategories = getDBvalues(QUERY_ITEM_CAT, item_name)
     cat_table = htmlTable(itemcategories, min(5, len(itemcategories)))
 
     return render_template(
@@ -63,8 +62,7 @@ def itemNew():
             return redirect(url_for('itemNew'))
 
         # check if item name is unique
-        querystring = "SELECT name FROM items WHERE name=%s;"
-        if checkExists(querystring, name):
+        if getDBvalues(QUERY_ITEM_ONE, name):
             flash("Error. An item with that name already exists.")
             return redirect(url_for('itemNew'))
 
@@ -88,7 +86,7 @@ def itemNew():
         return redirect(url_for('categories'))
     else: # the request method is GET
         # get all possible categories for the checkboxes stored as a table
-        categories = getCategoriesList()
+        categories = getDBvalues(QUERY_ALL_CAT)
         cat_table = htmlTable(categories, min(5, len(categories)))
         return render_template('item_new.html', categorytable=cat_table)
 
@@ -104,8 +102,7 @@ def itemEdit(item_name):
         item_update = request.form['name']
         desc_update = request.form['description']
         if item_update: # only check if the form was not blank
-            querystring = "SELECT name FROM items WHERE name=%s;"
-            if checkExists(querystring, item_update):
+            if getDBvalues(QUERY_ITEM_ONE, item_update):
                 flash("Error. An item with that name already exists.")
                 return redirect(url_for('itemEdit', item_name=item_name))
         # else the value is blank or otherwise fine
@@ -117,7 +114,7 @@ def itemEdit(item_name):
 
         # update categories if necessary
         formcategories = request.form.getlist('categories')
-        itemcategories = getItemCategories(item_name)
+        itemcategories = getDBvalues(QUERY_ITEM_CAT, item_name)
 
         # compare the two lists and find what needs to be added or removed
         toadd = [i for i in formcategories if i not in itemcategories]
@@ -153,11 +150,11 @@ def itemEdit(item_name):
         return redirect(url_for('categories'))
     else: # the request method is GET
         # fetch the item description and associated categories
-        description = getItemDescription(item_name)
-        itemcategories = getItemCategories(item_name)
+        description = getDBvalues(QUERY_ITEM_DESC, item_name, True)
+        itemcategories = getDBvalues(QUERY_ITEM_CAT, item_name)
 
         # fetch the categories as a table to display as checkboxes
-        categories = getCategoriesList()
+        categories = getDBvalues(QUERY_ALL_CAT)
         cat_table = htmlTable(categories, min(5, len(categories)))
 
         return render_template(
@@ -168,8 +165,7 @@ def itemEdit(item_name):
 def itemDelete(item_name):
     if request.method == 'POST':
         # check that the item exists
-        querystring = "SELECT name FROM items WHERE name=%s;"
-        if not checkExists(querystring, item_name):
+        if not getDBvalues(QUERY_ITEM_ONE, item_name):
             flash("The item you tried to delete doesn't exist.")
             return redirect(url_for('categories'))
         else: # the item exists. delete it
@@ -183,14 +179,17 @@ def itemDelete(item_name):
         flash(item_name + " was deleted.")
         return redirect(url_for('categories'))
     else: # the request method is GET
-        # assuming item is real...
-        flash("You are about to delete the following item.")
+        if not getDBvalues(QUERY_ITEM_ONE, item_name):
+            flash("The item you tried to delete doesn't exist.")
+            return redirect(url_for('categories'))
+        else:
+            flash("You are about to delete the following item.")
         return render_template('item_delete.html', item=item_name)
 
 @app.route('/catalog/categoriesEdit', methods=['GET', 'POST'])
 def categoriesEdit():
     if request.method == 'POST':
-        all_cat = getCategoriesList() # all categories
+        all_cat = getDBvalues(QUERY_ALL_CAT) # all categories
         keep_cat = request.form.getlist('categories') # categories to keep
         remove_cat = [i for i in all_cat if i not in keep_cat]
 
@@ -223,7 +222,7 @@ def categoriesEdit():
         flash("Categories removed or added accordingly.")
         return redirect(url_for('categories'))
     else: # request method is GET
-        categories = getCategoriesList()
+        categories = getDBvalues(QUERY_ALL_CAT)
         cat_table = htmlTable(categories, min(5, len(categories)))
         flash("If removing a category causes an item to have no category, it will only be viewable on the all items page.")
         return render_template('category_edit.html', categorytable=cat_table)
@@ -234,48 +233,35 @@ def connect():
     dbcursor = DB.cursor()
     return DB, dbcursor
 
-def getItemDescription(item_name):
-    """Returns the item description."""
+def getDBvalues(querystring, params=None, returnOne=False):
+    """Connect to database, run query, return values as list. Options available"""
     DB, dbcursor = connect()
-    # fetch the description
-    querystring = "SELECT description FROM items WHERE name = %s;"
-    dbcursor.execute(querystring, (item_name,))
-    description = dbcursor.fetchone()[0]
-
-    DB.close()
-    return description
-
-def getItemCategories(item_name):
-    """Returns the categories that this item belongs to in a list."""
-    DB, dbcursor = connect()
-    querystring  = "SELECT category FROM category_items WHERE item=%s;"
-    dbcursor.execute(querystring, (item_name,))
-    itemcategories = [i[0] for i in dbcursor.fetchall()] # flatten list of tuple
-
-    DB.close()
-    return itemcategories
-
-def getCategoriesList():
-    """Retrieves a list of all available categories."""
-    DB, dbcursor = connect()
-    querystring = "SELECT name FROM categories ORDER BY name;"
-    dbcursor.execute(querystring)
-    categories = [i[0] for i in dbcursor.fetchall()] # flatten list of tuple
-
-    DB.close()
-    return categories
-
-def checkExists(querystring, value):
-    DB, dbcursor = connect()
-    params = (value,)
-    dbcursor.execute(querystring, params)
-    valuelist = [i[0] for i in dbcursor.fetchall()] # flatten list of tuple
-    DB.close()
-
-    if value in valuelist:
-        return True
+    if params:
+        params = makeTuple(params)
+        dbcursor.execute(querystring, params)
     else:
-        return False
+        dbcursor.execute(querystring)
+
+    if returnOne: # a non-list expected
+        result = dbcursor.fetchone()
+        # if the result is a tuple with just 1 value, flatten
+        if type(result) is tuple and len(result) == 1:
+            result = result[0]
+    else: # flat list expected if results are len==1 tuples
+        result = dbcursor.fetchall()
+        # check if results are tuples with just 1 value
+        if len(result) > 0 and len(result[0]) <= 1:
+            result = [i[0] for i in result] # flatten the list
+    DB.close()
+    return result
+
+def makeTuple(value):
+    """Take a value of any of several types and return that value as a tuple"""
+    if isinstance(value, (int, basestring)):
+        atuple = (value,)
+    else:
+        atuple = tuple(value)
+    return atuple
 
 def htmlTable(flatlist, numrows):
     """Converts a flat list into list of sublists ordered for an HTML table."""
