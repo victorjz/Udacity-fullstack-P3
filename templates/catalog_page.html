@@ -4,14 +4,17 @@
 <h1>Catalog main page</h1>
 
 <div>
-{% for i in categories %}
-<p><a href='{{url_for('categoryItems', category_name=i)}}'>{{i}}</a></p>
-{% endfor %}
+  <ul>
+    {% for i in categories %}
+    <li><a href='{{url_for('categoryItems', category_name=i)}}'>{{i}}</a></li>
+    {% endfor %}
+  </ul>
 </div>
-<br>
-<div>
-<p><a href='{{url_for('itemAll')}}'>See all items</a></p>
-<p><a href='{{url_for('itemNew')}}'>Add a new item</a></p>
-<p><a href='{{url_for('categoriesEdit')}}'>Edit or delete categories</a></p>
-</div>
+
+<br><br>
+<nav>
+  <a href='{{url_for('itemAll')}}'>See all items</a><br>
+  <a href='{{url_for('itemNew')}}'>Add a new item</a><br>
+  <a href='{{url_for('categoriesEdit')}}'>Edit or delete categories</a><br>
+</nav>
 {% endblock %}

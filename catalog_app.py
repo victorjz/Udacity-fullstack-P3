@@ -224,7 +224,6 @@ def categoriesEdit():
     else: # request method is GET
         categories = getDBvalues(QUERY_ALL_CAT)
         cat_table = htmlTable(categories, min(5, len(categories)))
-        flash("If removing a category causes an item to have no category, it will only be viewable on the all items page.")
         return render_template('category_edit.html', categorytable=cat_table)
 
 def connect():

@@ -31,7 +31,7 @@ descriptions = [
     "Journey far and wide as a mutated monster hunter in search of his star-crossed adopted daughter",
     "Black and green accents with compartments for laptop, tablet, and power supply.",
     "Adjustable storage walls and a tablet pocket keep you organized and stylish.",
-    "This fourth iteration introduces 4k video recording with the same great superior optics and rotating view screen to make the best handheld camera.",
+    "This fourth iteration introduces 4k video recording with further improved optics and same great rotating view screen to make the best pocket camera.",
     "Your tax accountant in a box.",
     "All the power of the latest Microsoft operating system, none of the packaging"]
 item_desc = zip(items, descriptions) # combine for later easy DB writes

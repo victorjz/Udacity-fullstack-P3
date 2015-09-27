@@ -1,1 +1,66 @@
-h1 {border-bottom: 2px solid #eee;}
+div.page
+{
+  font-family: verdana, sans-serif;
+}
+h1
+{
+  font-family: serif;
+  font-size: xx-large;
+  border-bottom: 2px solid #eee;
+}
+h2, h3
+{
+  font-family: serif;
+}
+ul.flash
+{
+  color: red;
+  list-style-type: disc;
+  max-width: 500px;
+  border-style: solid;
+  border-width: 1px;
+}
+ul
+{
+  list-style-type: none;
+  line-height: 30px;
+}
+table.allitems
+{
+  border-style: solid;
+  border-width: 1px;
+  border-color: #999;
+}
+td, th
+{
+  width: 300px;
+  padding: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-collapse: collapse;
+  border-color: #999;
+}
+tr
+{
+  height: 30px;
+}
+a, a:link
+{
+   color: #2f4f4f;
+   text-decoration: none;
+}
+a:visited
+{
+   color: #2f4f4f;
+   text-decoration: none;
+}
+a:link:hover
+{
+   background-color: #e9e9e9;
+   text-decoration: underline;
+}
+a:active
+{
+   color: #a9a9a9;
+   text-decoration: underline;
+}

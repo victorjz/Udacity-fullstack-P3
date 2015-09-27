@@ -1,20 +1,23 @@
 {% extends "catalog_base.html" %}
 {% block body %}
 
-<h1>{{item}} Edit</h1>
+<h3> Now editing this item:</h3>
+<h1>{{item}}</h1>
 
 <p>If a new value is not entered, current value will be retained.</p>
 
 <form action= "{{url_for('itemEdit', item_name=item)}}" method = 'POST'>
 
 <dl>
-  <dt>Enter new name:
-  <dd><input type = 'text' size='80' name = 'name' placeholder = '{{item}}'></p>
-  <dt>Enter new description:
-  <dd><textarea rows='4' cols='80' name = 'description' placeholder = '{{description}}'></textarea></p>
+  <dt>Enter new name:</dt>
+  <dd><input type = 'text' size='80' name = 'name' placeholder = '{{item}}'></dd>
+  <br>
+  <dt>Enter new description:</dt>
+  <dd><textarea rows='4' cols='80' name = 'description' placeholder = '{{description}}'></textarea></dd>
 </dl>
 
-At least one category required:<br>
+<p>
+At least one category required:
 <table>
 {% for row in categorytable %}
 <tr>
@@ -27,17 +30,18 @@ At least one category required:<br>
   {% endfor %}
 </tr>
 {% endfor %}
-<table>
+</table>
+</p>
 
 <p>
-  Click Submit to confirm changes:
-  <input type='submit' value='Submit'>
+  Click Submit to confirm changes: <input type='submit' value='Submit'>
 </p>
 </form>
-<a href= '{{url_for('itemDetails', item_name=item)}}'>Cancel</a>
 
-<div>
-<p><a href='{{url_for('categories')}}'>Back to catalog</a></p>
-</div>
+<br>
+<nav>
+<a href= '{{url_for('itemDetails', item_name=item)}}'>Cancel</a><br>
+<a href='{{url_for('categories')}}'>Back to catalog</a>
+</nav>
 
 {% endblock %}

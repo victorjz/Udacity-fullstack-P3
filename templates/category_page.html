@@ -3,16 +3,15 @@
 
 <h1>{{category}}</h1>
 
-{% for i in items %}
 <div>
-<p>
-<a href='{{url_for('itemDetails', item_name=i)}}'>{{i}}</a>
-</p>
-</div>
-{% endfor %}
-
-<div>
-<p><a href='{{url_for('categories')}}'>Back to catalog</a></p>
+  <ul>
+    {% for i in items %}
+    <li><a href='{{url_for('itemDetails', item_name=i)}}'>{{i}}</a></li>
+    {% endfor %}
+  </ul>
 </div>
 
+<nav>
+  <p><a href='{{url_for('categories')}}'>Back to catalog</a></p>
+</nav>
 {% endblock %}

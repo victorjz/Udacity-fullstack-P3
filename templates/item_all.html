@@ -3,10 +3,10 @@
 
 <h1>All items and associated categories</h1>
 
-<table>
+<table class=allitems>
 <tr>
-  <td>Items</td>
-  <td>Categories</td>
+  <th>Items</th>
+  <th>Categories</th>
 </tr>
 {% for i, j in itemcatpairs %}
 <tr>
@@ -16,17 +16,17 @@
   No categories!
   {% else %}
     {% for c in j %}
-      <a href='{{url_for('categoryItems', category_name=c)}}'>{{c}}</a>&nbsp;
+      <a href='{{url_for('categoryItems', category_name=c)}}'>{{c}}</a>;&nbsp;
     {% endfor %}
   {% endif %}
   </td>
 </tr>
 {% endfor %}
-<table>
+</table>
 
-
-<div>
-<p><a href='{{url_for('categories')}}'>Back to catalog</a></p>
-</div>
+<br><br>
+<nav>
+  <a href='{{url_for('categories')}}'>Back to catalog</a>
+</nav>
 
 {% endblock %}
