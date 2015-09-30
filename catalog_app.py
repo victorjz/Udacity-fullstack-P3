@@ -2,14 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 import psycopg2
 
 #The following global variables are intended as constants
-QUERY_ITEM_ONE = "SELECT name FROM items WHERE name=%s"
+QUERY_ITEM_ONE = "SELECT name FROM items WHERE name=%s;"
 QUERY_ITEM_DESC = "SELECT description FROM items WHERE name=%s;"
 QUERY_ITEM_CAT = "SELECT category FROM category_items WHERE item=%s;"
 QUERY_ALL_CAT = "SELECT name FROM categories ORDER BY name;"
 
 app = Flask(__name__)
-# IMPLEMENT BREAD CRUMBS AS A GLOBAL STACK
-# BEWARE OF MANUALLY TYPED URLS
 @app.route('/')
 @app.route('/catalog/')
 def categories():
