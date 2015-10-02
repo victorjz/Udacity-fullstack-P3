@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import psycopg2
 
 #The following global variables are intended as constants
@@ -6,6 +6,12 @@ QUERY_ITEM_ONE = "SELECT name FROM items WHERE name=%s;"
 QUERY_ITEM_DESC = "SELECT description FROM items WHERE name=%s;"
 QUERY_ITEM_CAT = "SELECT category FROM category_items WHERE item=%s;"
 QUERY_ALL_CAT = "SELECT name FROM categories ORDER BY name;"
+ITEM_FIELDS = ('name', 'description')
+
+# imports for anti forgery
+from flask import session as login_session
+import random
+import string
 
 app = Flask(__name__)
 @app.route('/')
@@ -13,6 +19,32 @@ app = Flask(__name__)
 def categories():
     categories = getDBvalues(QUERY_ALL_CAT)
     return render_template('catalog_page.html', categories=categories)
+
+@app.route('/catalog.json')
+def catalogJSON():
+    # get all items and descriptions into a dictionary
+    querystring = "SELECT * FROM items;"
+    allitems = getDBvalues(querystring)
+    itemdictlist = [dict(zip(ITEM_FIELDS, i)) for i in allitems]
+
+    # list of tuples of category then item, in that order
+    catitempairs = getDBvalues("SELECT * FROM category_items;")
+
+    # insert into dictionary list of categories for each item
+    # c[0] is the category and c[1] is the item name
+    for i in itemdictlist:
+        i['categories'] = [c[0] for c in catitempairs if i['name']==c[1]]
+
+    return jsonify(Items=itemdictlist)
+
+# Create anti-forgery state token
+# borrowed from Udacity
+@app.route('/login')
+def showLogin():
+    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                    for x in xrange(32))
+    login_session['state'] = state
+    return "The current session state is %s" % login_session['state']
 
 @app.route('/catalog/<string:category_name>/items')
 def categoryItems(category_name):
@@ -25,13 +57,18 @@ def categoryItems(category_name):
 @app.route('/catalog/items')
 def itemAll():
     """Displays all items and their associated categories"""
+    # get a list of all item names
     querystring = "SELECT name FROM items;"
     allitems = getDBvalues(querystring)
 
+    # get a list of all category item pairs
+    itemcatpairs = getDBvalues("SELECT * FROM category_items;")
     itemcatlist = [] # list of list of categories for each item
+    # c[0] is the category, c[1] is the item name
     for i in allitems:
-        itemcatlist.append(getDBvalues(QUERY_ITEM_CAT, i)) # even if i is an empty
+        itemcatlist.append([c[0] for c in itemcatpairs if c[1]==i])
 
+    # form the list of item names with a list of their categories
     itemcatpairs = zip(allitems, itemcatlist)
 
     return render_template('item_all.html', itemcatpairs=itemcatpairs)
@@ -42,8 +79,10 @@ def itemDetails(item_name):
     itemcategories = getDBvalues(QUERY_ITEM_CAT, item_name)
     cat_table = htmlTable(itemcategories, min(5, len(itemcategories)))
 
+    itemdict = dict(zip(ITEM_FIELDS, [item_name, description]))
+
     return render_template(
-        'item_page.html', item=item_name, description=description,
+        'item_page.html', item=itemdict,
         itemcattable=cat_table)
 
 @app.route('/catalog/new', methods=['GET', 'POST'])
