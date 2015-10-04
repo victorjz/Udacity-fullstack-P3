@@ -8,14 +8,14 @@
   <th>Items</th>
   <th>Categories</th>
 </tr>
-{% for i, j in itemcatpairs %}
+{% for i in items %}
 <tr>
-  <td><a href='{{url_for('itemDetails', item_name=i)}}'>{{i}}</a></td>
+  <td><a href='{{url_for('itemDetails', item_name=i['name'])}}'>{{i['name']}}</a></td>
   <td>
-  {% if j == [] %}
+  {% if i['categories'] == [] %}
   No categories!
   {% else %}
-    {% for c in j %}
+    {% for c in i['categories'] %}
       <a href='{{url_for('categoryItems', category_name=c)}}'>{{c}}</a>;&nbsp;
     {% endfor %}
   {% endif %}

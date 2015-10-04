@@ -2,16 +2,25 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 import psycopg2
 
 #The following global variables are intended as constants
-QUERY_ITEM_ONE = "SELECT name FROM items WHERE name=%s;"
+QUERY_ITEM_ONE = "SELECT * FROM items WHERE name=%s;"
 QUERY_ITEM_DESC = "SELECT description FROM items WHERE name=%s;"
 QUERY_ITEM_CAT = "SELECT category FROM category_items WHERE item=%s;"
 QUERY_ALL_CAT = "SELECT name FROM categories ORDER BY name;"
 ITEM_FIELDS = ('name', 'description')
+CLIENT_ID = "635118461401-b9i2jr946sit8rlh0qfd6vbbbq8hr04o.apps.googleusercontent.com"
 
-# imports for anti forgery
+# imports for logging in and anti forgery
 from flask import session as login_session
 import random
 import string
+
+# imports for logging in callback
+from oauth2client.client import flow_from_clientsecrets
+from oauth2client.client import FlowExchangeError
+import httplib2
+import json
+from flask import make_response
+import requests
 
 app = Flask(__name__)
 @app.route('/')
@@ -22,18 +31,8 @@ def categories():
 
 @app.route('/catalog.json')
 def catalogJSON():
-    # get all items and descriptions into a dictionary
-    querystring = "SELECT * FROM items;"
-    allitems = getDBvalues(querystring)
-    itemdictlist = [dict(zip(ITEM_FIELDS, i)) for i in allitems]
-
-    # list of tuples of category then item, in that order
-    catitempairs = getDBvalues("SELECT * FROM category_items;")
-
-    # insert into dictionary list of categories for each item
-    # c[0] is the category and c[1] is the item name
-    for i in itemdictlist:
-        i['categories'] = [c[0] for c in catitempairs if i['name']==c[1]]
+    # get all items, descriptions, and categories into a dictionary
+    itemdictlist = getItemCategoriesDict()
 
     return jsonify(Items=itemdictlist)
 
@@ -44,7 +43,89 @@ def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
-    return "The current session state is %s" % login_session['state']
+    return render_template('login.html', session=login_session)
+
+@app.route('/gconnect', methods=['POST'])
+def gconnect():
+    # Validate state token
+    if request.args.get('state') != login_session['state']:
+        response = make_response(json.dumps('Invalid state parameter.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    # Obtain authorization code
+    code = request.data
+
+    try:
+        # Upgrade the authorization code into a credentials object
+        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow.redirect_uri = 'postmessage'
+        credentials = oauth_flow.step2_exchange(code)
+    except FlowExchangeError:
+        response = make_response(
+            json.dumps('Failed to upgrade the authorization code.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Check that the access token is valid.
+    access_token = credentials.access_token
+    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
+           % access_token)
+    h = httplib2.Http()
+    result = json.loads(h.request(url, 'GET')[1])
+    # If there was an error in the access token info, abort.
+    if result.get('error') is not None:
+        response = make_response(json.dumps(result.get('error')), 500)
+        response.headers['Content-Type'] = 'application/json'
+
+    # Verify that the access token is used for the intended user.
+    gplus_id = credentials.id_token['sub']
+    if result['user_id'] != gplus_id:
+        response = make_response(
+            json.dumps("Token's user ID doesn't match given user ID."), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Verify that the access token is valid for this app.
+    if result['issued_to'] != CLIENT_ID:
+        response = make_response(
+            json.dumps("Token's client ID does not match app's."), 401)
+        print "Token's client ID does not match app's."
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    stored_credentials = login_session.get('credentials')
+    stored_gplus_id = login_session.get('gplus_id')
+    if stored_credentials is not None and gplus_id == stored_gplus_id:
+        response = make_response(json.dumps('Current user is already connected.'),
+                                 200)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Store the access token in the session for later use.
+    login_session['credentials'] = credentials.to_json() # added to_json
+    login_session['gplus_id'] = gplus_id
+
+    # Get user info
+    userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
+    params = {'access_token': credentials.access_token, 'alt': 'json'}
+    answer = requests.get(userinfo_url, params=params)
+
+    data = answer.json()
+
+    login_session['username'] = data['name']
+    login_session['picture'] = data['picture']
+    login_session['email'] = data['email']
+
+    output = ''
+    output += '<h1>Welcome, '
+    output += login_session['username']
+    output += '!</h1>'
+    output += '<img src="'
+    output += login_session['picture']
+    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    flash("you are now logged in as %s" % login_session['username'])
+    print "done!"
+    return output
 
 @app.route('/catalog/<string:category_name>/items')
 def categoryItems(category_name):
@@ -57,33 +138,25 @@ def categoryItems(category_name):
 @app.route('/catalog/items')
 def itemAll():
     """Displays all items and their associated categories"""
-    # get a list of all item names
-    querystring = "SELECT name FROM items;"
-    allitems = getDBvalues(querystring)
+    # get all items, descriptions, and categories into a dictionary
+    itemdictlist = getItemCategoriesDict()
 
-    # get a list of all category item pairs
-    itemcatpairs = getDBvalues("SELECT * FROM category_items;")
-    itemcatlist = [] # list of list of categories for each item
-    # c[0] is the category, c[1] is the item name
-    for i in allitems:
-        itemcatlist.append([c[0] for c in itemcatpairs if c[1]==i])
-
-    # form the list of item names with a list of their categories
-    itemcatpairs = zip(allitems, itemcatlist)
-
-    return render_template('item_all.html', itemcatpairs=itemcatpairs)
+    return render_template('item_all.html', items=itemdictlist)
 
 @app.route('/catalog/<string:item_name>')
 def itemDetails(item_name):
-    description = getDBvalues(QUERY_ITEM_DESC, item_name, True)
+    itemresult = getDBvalues(QUERY_ITEM_ONE, item_name, True)
+    if not itemresult:
+        flash("The item for which you're trying to view details doesn't exist.")
+        return redirect(url_for('categories'))
     itemcategories = getDBvalues(QUERY_ITEM_CAT, item_name)
     cat_table = htmlTable(itemcategories, min(5, len(itemcategories)))
 
-    itemdict = dict(zip(ITEM_FIELDS, [item_name, description]))
+    # create the dictionary
+    itemdict = dict(zip(ITEM_FIELDS, itemresult))
 
     return render_template(
-        'item_page.html', item=itemdict,
-        itemcattable=cat_table)
+        'item_page.html', item=itemdict, itemcattable=cat_table)
 
 @app.route('/catalog/new', methods=['GET', 'POST'])
 def itemNew():
@@ -186,17 +259,22 @@ def itemEdit(item_name):
         flash("Item has been updated.")
         return redirect(url_for('categories'))
     else: # the request method is GET
-        # fetch the item description and associated categories
-        description = getDBvalues(QUERY_ITEM_DESC, item_name, True)
-        itemcategories = getDBvalues(QUERY_ITEM_CAT, item_name)
+        itemresult = getDBvalues(QUERY_ITEM_ONE, item_name, True)
+        # check if the item exists
+        if not itemresult:
+            flash("The item you tried to edit doesn't exist.")
+            return redirect(url_for('categories'))
+
+        # create the dictionary and add associated categories
+        itemdict = dict(zip(ITEM_FIELDS, itemresult))
+        itemdict['categories'] = getDBvalues(QUERY_ITEM_CAT, item_name)
 
         # fetch the categories as a table to display as checkboxes
         categories = getDBvalues(QUERY_ALL_CAT)
         cat_table = htmlTable(categories, min(5, len(categories)))
 
         return render_template(
-            'item_edit.html', item=item_name, description=description,
-            categorytable=cat_table, itemcategories=itemcategories)
+            'item_edit.html', item=itemdict, categorytable=cat_table)
 
 @app.route('/catalog/<string:item_name>/delete', methods=['GET', 'POST'])
 def itemDelete(item_name):
@@ -220,8 +298,7 @@ def itemDelete(item_name):
             flash("The item you tried to delete doesn't exist.")
             return redirect(url_for('categories'))
         else:
-            flash("You are about to delete the following item.")
-        return render_template('item_delete.html', item=item_name)
+            return render_template('item_delete.html', item=item_name)
 
 @app.route('/catalog/categoriesEdit', methods=['GET', 'POST'])
 def categoriesEdit():
@@ -299,11 +376,27 @@ def makeTuple(value):
         atuple = tuple(value)
     return atuple
 
+def getItemCategoriesDict():
+    # get all items and descriptions into a dictionary
+    querystring = "SELECT * FROM items;"
+    allitems = getDBvalues(querystring)
+    itemdictlist = [dict(zip(ITEM_FIELDS, i)) for i in allitems]
+
+    # list of tuples of category then item, in that order
+    catitempairs = getDBvalues("SELECT * FROM category_items;")
+
+    # insert into dictionary list of categories for each item
+    # c[0] is the category and c[1] is the item name
+    for i in itemdictlist:
+        i['categories'] = [c[0] for c in catitempairs if i['name']==c[1]]
+
+    return itemdictlist
+
 def htmlTable(flatlist, numrows):
     """Converts a flat list into list of sublists ordered for an HTML table."""
     return [flatlist[i::numrows] for i in range(0, numrows)]
 
 if __name__ == '__main__':
-    app.secret_key = 'super_secret_key'
+    app.secret_key = 'r5Sb35U-kE24aNrF55ee9MK0'
     app.debug = True
     app.run(host='0.0.0.0', port=8000)

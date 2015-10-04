@@ -2,18 +2,18 @@
 {% block body %}
 
 <h3> Now editing this item:</h3>
-<h1>{{item}}</h1>
+<h1>{{item['name']}}</h1>
 
 <p>If a new value is not entered, current value will be retained.</p>
 
-<form action= "{{url_for('itemEdit', item_name=item)}}" method = 'POST'>
+<form action= "{{url_for('itemEdit', item_name=item['name'])}}" method = 'POST'>
 
 <dl>
   <dt>Enter new name:</dt>
-  <dd><input type = 'text' size='80' name = 'name' placeholder = '{{item}}'></dd>
+  <dd><input type = 'text' size='80' name = 'name' placeholder = '{{item['name']}}'></dd>
   <br>
   <dt>Enter new description:</dt>
-  <dd><textarea rows='4' cols='80' name = 'description' placeholder = '{{description}}'></textarea></dd>
+  <dd><textarea rows='4' cols='80' name = 'description' placeholder = '{{item['description']}}'></textarea></dd>
 </dl>
 
 <p>
@@ -22,7 +22,7 @@ At least one category required:
 {% for row in categorytable %}
 <tr>
   {% for column in row %}
-  {% if column in itemcategories %}
+  {% if column in item['categories'] %}
   <td><input type='checkbox' name='categories' checked value='{{column}}'>{{column}}</td>
   {% else %}
   <td><input type='checkbox' name='categories' value='{{column}}'>{{column}}</td>
@@ -40,7 +40,7 @@ At least one category required:
 
 <br>
 <nav>
-<a href= '{{url_for('itemDetails', item_name=item)}}'>Cancel</a><br>
+<a href= '{{url_for('itemDetails', item_name=item['name'])}}'>Cancel</a><br>
 <a href='{{url_for('categories')}}'>Back to catalog</a>
 </nav>
 
