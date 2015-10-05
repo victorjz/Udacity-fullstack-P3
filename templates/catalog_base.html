@@ -14,6 +14,15 @@
 {% endif %}
 {% endwith %}
 
+<h3>
+{% if session['username'] %}
+  Logged in as {{session['username']}}
+  <a href={{url_for('gdisconnect')}}>Do you need to log out?</a>
+{% else %}
+  <a href={{url_for('showLogin')}}>Would you care to log in?</a>
+{% endif %}
+</h3>
+
 <div class=page>
   {% block body %}{% endblock %}
 </div>

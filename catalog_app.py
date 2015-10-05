@@ -16,7 +16,7 @@ import string
 
 # imports for logging in callback
 from oauth2client.client import flow_from_clientsecrets
-from oauth2client.client import FlowExchangeError
+from oauth2client.client import FlowExchangeError, OAuth2Credentials
 import httplib2
 import json
 from flask import make_response
@@ -33,8 +33,13 @@ def categories():
 def catalogJSON():
     # get all items, descriptions, and categories into a dictionary
     itemdictlist = getItemCategoriesDict()
-
     return jsonify(Items=itemdictlist)
+
+@app.route('/check')
+def check(): # DEBUG
+    response = gdisconnect()
+    print response
+    return "Check"
 
 # Create anti-forgery state token
 # borrowed from Udacity
@@ -43,7 +48,16 @@ def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
-    return render_template('login.html', session=login_session)
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    response = gdisconnect()
+    output = ""
+    output += "<html><body><p>"
+    output += response.status
+    output += "</p><a href='{{url_for('categories')}}>Back to Catalog</a>"
+    return output
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
@@ -126,6 +140,40 @@ def gconnect():
     flash("you are now logged in as %s" % login_session['username'])
     print "done!"
     return output
+
+@app.route('/gdisconnect')
+def gdisconnect():
+        # Only disconnect a connected user.
+    credentials = login_session.get('credentials')
+    if credentials is None:
+        response = make_response(
+            json.dumps('Current user not connected.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    credentials = OAuth2Credentials.from_json(credentials) # convert
+    access_token = credentials.access_token
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % access_token
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[0]
+    print result
+    if result['status'] == '200':
+        # Reset the user's sesson.
+        del login_session['credentials']
+        del login_session['gplus_id']
+        del login_session['username']
+        del login_session['email']
+        del login_session['picture']
+
+        flash("Log out successful.  See you next time.")
+        response = make_response(redirect(url_for('categories')))
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    else:
+        # For whatever reason, the given token was invalid.
+        flash("Failed to revoke token for given user.")
+        response = make_response(redirect(url_for('categories')))
+        response.headers['Content-Type'] = 'application/json'
+        return response
 
 @app.route('/catalog/<string:category_name>/items')
 def categoryItems(category_name):
