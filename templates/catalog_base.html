@@ -2,31 +2,33 @@
 <link rel=stylesheet type=text/css href="{{url_for('static',
   filename='style.css')}}">
 
-{% with messages = get_flashed_messages() %}
-{% if messages %}
+<div id=leftbanner>
+  <a href={{url_for('categories')}} title="Click me to go home">
+    <img src={{url_for('static', filename='CATaLOGO.png')}} alt='Our logo'
+      height=150>
+  </a><br><br>
+  <h3>
+  {% if session['username'] %}
+    Logged in as {{session['username']}}<br>
+    <a href={{url_for('gdisconnect')}}>Do you need to LOG out?</a>
+  {% else %}
+    <a href={{url_for('showLogin')}}>Would you care to LOG in?</a>
+  {% endif %}
+  </h3>
+</div>
 
-<ul class=flash>
-  {% for message in messages %}
-  <li><em>{{message}}</em></li>
-  {% endfor %}
-</ul>
+<div class=page>
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
 
-{% endif %}
-{% endwith %}
+  <ul class='flash'>
+    {% for message in messages %}
+    <li><em>{{message}}</em></li>
+    {% endfor %}
+  </ul>
 
-<a href={{url_for('categories')}} title="Click me to go home">
-  <img src={{url_for('static', filename='CATaLOGO.png')}} alt='Our logo'
-    height=150>
-</a><br><br>
-<h3>
-{% if session['username'] %}
-  Logged in as {{session['username']}}<br>
-  <a href={{url_for('gdisconnect')}}>Do you need to LOG out?</a>
-{% else %}
-  <a href={{url_for('showLogin')}}>Would you care to LOG in?</a>
-{% endif %}
-</h3>
+  {% endif %}
+  {% endwith %}
 
-<div class=page style="margin-left:300px;">
   {% block body %}{% endblock %}
 </div>

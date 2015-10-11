@@ -1,5 +1,15 @@
+#leftbanner
+{
+  margin-left:10px;
+  position:fixed;
+  top: 0px;
+  left: 0px;
+}
 div.page
 {
+  position:absolute;
+  top: 0px;
+  left: 300px;
   font-family: verdana, sans-serif;
 }
 h1
