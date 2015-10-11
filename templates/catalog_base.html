@@ -14,15 +14,19 @@
 {% endif %}
 {% endwith %}
 
+<a href={{url_for('categories')}} title="Click me to go home">
+  <img src={{url_for('static', filename='CATaLOGO.png')}} alt='Our logo'
+    height=150>
+</a><br><br>
 <h3>
 {% if session['username'] %}
-  Logged in as {{session['username']}}
-  <a href={{url_for('gdisconnect')}}>Do you need to log out?</a>
+  Logged in as {{session['username']}}<br>
+  <a href={{url_for('gdisconnect')}}>Do you need to LOG out?</a>
 {% else %}
-  <a href={{url_for('showLogin')}}>Would you care to log in?</a>
+  <a href={{url_for('showLogin')}}>Would you care to LOG in?</a>
 {% endif %}
 </h3>
 
-<div class=page>
+<div class=page style="margin-left:300px;">
   {% block body %}{% endblock %}
 </div>

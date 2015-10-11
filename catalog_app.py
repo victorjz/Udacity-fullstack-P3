@@ -26,17 +26,20 @@ app = Flask(__name__)
 @app.route('/')
 @app.route('/catalog/')
 def categories():
+    """Function associated with home page. Displays category links to items"""
     categories = getDBvalues(QUERY_ALL_CAT)
     return render_template('catalog_page.html', categories=categories)
 
 @app.route('/catalog.json')
 def catalogJSON():
+    """Present page of all items in JSON format"""
     # get all items, descriptions, and categories into a dictionary
     itemdictlist = getItemCategoriesDict()
     return jsonify(Items=itemdictlist)
 
 @app.route('/check')
-def check(): # DEBUG
+def check():
+    """Function used for DEBUG purposes"""
     response = gdisconnect()
     print response
     return "Check"
@@ -45,6 +48,10 @@ def check(): # DEBUG
 # borrowed from Udacity
 @app.route('/login')
 def showLogin():
+    """Creates a cross-site anti-forgery key and presents the login page.
+
+    This code borrowed directly from the Udacity course.
+    """
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
@@ -52,6 +59,8 @@ def showLogin():
 
 @app.route('/logout')
 def logout():
+    """Properly disconnects from Google login and presents link to home page
+    Not working"""
     response = gdisconnect()
     output = ""
     output += "<html><body><p>"
@@ -61,6 +70,9 @@ def logout():
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    """Checks authentication of login and updates the login state
+
+    This code borrowed directly from Udacity course."""
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -143,6 +155,10 @@ def gconnect():
 
 @app.route('/gdisconnect')
 def gdisconnect():
+    """Properly disconnects from Google login service; redirects to home page.
+
+    This code borrowed directly from Udacity course.
+    """
         # Only disconnect a connected user.
     credentials = login_session.get('credentials')
     if credentials is None:
@@ -177,6 +193,7 @@ def gdisconnect():
 
 @app.route('/catalog/<string:category_name>/items')
 def categoryItems(category_name):
+    """Presents a list of items for the associated category."""
     querystring = "SELECT item FROM category_items WHERE category = %s;"
     items = getDBvalues(querystring, category_name)
 
@@ -185,7 +202,7 @@ def categoryItems(category_name):
 
 @app.route('/catalog/items')
 def itemAll():
-    """Displays all items and their associated categories"""
+    """Displays all items and their associated categories as a table of links"""
     # get all items, descriptions, and categories into a dictionary
     itemdictlist = getItemCategoriesDict()
 
@@ -193,6 +210,7 @@ def itemAll():
 
 @app.route('/catalog/<string:item_name>')
 def itemDetails(item_name):
+    """Displays the information relating to all the item detail fields"""
     itemresult = getDBvalues(QUERY_ITEM_ONE, item_name, True)
     if not itemresult:
         flash("The item for which you're trying to view details doesn't exist.")
@@ -208,6 +226,12 @@ def itemDetails(item_name):
 
 @app.route('/catalog/new', methods=['GET', 'POST'])
 def itemNew():
+    """Displays a form for a new item or updates the database with a new item.
+
+    Behavior varies according to http method:
+        GET: presents a form that a user can fill out to define a new item
+        POST:  inserts the item defined by the form into the database
+    """
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
@@ -250,6 +274,12 @@ def itemNew():
 
 @app.route('/catalog/<string:item_name>/edit', methods=['GET', 'POST'])
 def itemEdit(item_name):
+    """Displays a form to update an item or updates the item in the database
+
+    Behavior varies according to http method
+        GET: Presents the form that can be used to update item details
+        POST: Takes values from the form and updates the item in the database
+    """
     if request.method == 'POST':
         # check if at least one category checked or else try again
         if not request.form.getlist('categories'):
@@ -326,6 +356,12 @@ def itemEdit(item_name):
 
 @app.route('/catalog/<string:item_name>/delete', methods=['GET', 'POST'])
 def itemDelete(item_name):
+    """Presents confirmation page to delete an item or deletes the item in the database
+
+    Behavior varies according to http method
+        GET: Displays a page with the option to confirm deletion of the item
+        POST: Deletes the item in the database and redirects to home
+    """
     if request.method == 'POST':
         # check that the item exists
         if not getDBvalues(QUERY_ITEM_ONE, item_name):
@@ -350,6 +386,14 @@ def itemDelete(item_name):
 
 @app.route('/catalog/categoriesEdit', methods=['GET', 'POST'])
 def categoriesEdit():
+    """Presents a form to add or remove categories or performs those functions in the database
+
+    Behavior varies according to http method
+        GET: Shows a form to remove categories via checkbox or manually type in
+        names of new categories
+        POST: Performs adding or removing categories in the database according
+        to the form
+    """
     if request.method == 'POST':
         all_cat = getDBvalues(QUERY_ALL_CAT) # all categories
         keep_cat = request.form.getlist('categories') # categories to keep
@@ -395,7 +439,15 @@ def connect():
     return DB, dbcursor
 
 def getDBvalues(querystring, params=None, returnOne=False):
-    """Connect to database, run query, return values as list. Options available"""
+    """Connect to database, run query, return values as list. Options available
+
+        querystring: A string representing an SQL query
+        params: Optional. May be a tuple or a singular value. If provided, runs
+        the query with parameters
+        returnOne: Optional. If not provided or False, provides results in a
+        list. If True, provides the first result as a singular value.
+    """
+
     DB, dbcursor = connect()
     if params:
         params = makeTuple(params)
@@ -418,13 +470,16 @@ def getDBvalues(querystring, params=None, returnOne=False):
 
 def makeTuple(value):
     """Take a value of any of several types and return that value as a tuple"""
+    # values of these types fail a direct conversion to tuple.
     if isinstance(value, (int, basestring)):
         atuple = (value,)
-    else:
+    else: # any other kind of value can be converted
         atuple = tuple(value)
     return atuple
 
 def getItemCategoriesDict():
+    """Returns a dictionary of items and their fields for easy function argument passing"""
+
     # get all items and descriptions into a dictionary
     querystring = "SELECT * FROM items;"
     allitems = getDBvalues(querystring)
