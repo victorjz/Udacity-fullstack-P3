@@ -57,17 +57,6 @@ def showLogin():
     login_session['state'] = state
     return render_template('login.html')
 
-@app.route('/logout')
-def logout():
-    """Properly disconnects from Google login and presents link to home page
-    Not working"""
-    response = gdisconnect()
-    output = ""
-    output += "<html><body><p>"
-    output += response.status
-    output += "</p><a href='{{url_for('categories')}}>Back to Catalog</a>"
-    return output
-
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     """Checks authentication of login and updates the login state
@@ -159,7 +148,7 @@ def gdisconnect():
 
     This code borrowed directly from Udacity course.
     """
-        # Only disconnect a connected user.
+    # Only disconnect a connected user.
     credentials = login_session.get('credentials')
     if credentials is None:
         response = make_response(
@@ -180,12 +169,16 @@ def gdisconnect():
         del login_session['email']
         del login_session['picture']
 
+        # Changed the following lines. Instead of displaying a new page,
+        # redirect the user back to the home page with a message
         flash("Log out successful.  See you next time.")
         response = make_response(redirect(url_for('categories')))
         response.headers['Content-Type'] = 'application/json'
         return response
     else:
         # For whatever reason, the given token was invalid.
+        # Changed the following lines. Instead of displaying a new page,
+        # redirect the user back to the home page with a message
         flash("Failed to revoke token for given user.")
         response = make_response(redirect(url_for('categories')))
         response.headers['Content-Type'] = 'application/json'
@@ -193,7 +186,11 @@ def gdisconnect():
 
 @app.route('/catalog/<string:category_name>/items')
 def categoryItems(category_name):
-    """Presents a list of items for the associated category."""
+    """Presents a list of items for the associated category.
+
+    Args:
+      category_name: String. Name of the category previously clicked.
+    """
     querystring = "SELECT item FROM category_items WHERE category = %s;"
     items = getDBvalues(querystring, category_name)
 
@@ -210,7 +207,11 @@ def itemAll():
 
 @app.route('/catalog/<string:item_name>')
 def itemDetails(item_name):
-    """Displays the information relating to all the item detail fields"""
+    """Displays the information relating to all the item detail fields
+
+    Args:
+      item_name: String. The name of the item clicked on the previous page.
+    """
     itemresult = getDBvalues(QUERY_ITEM_ONE, item_name, True)
     if not itemresult:
         flash("The item for which you're trying to view details doesn't exist.")
@@ -229,8 +230,8 @@ def itemNew():
     """Displays a form for a new item or updates the database with a new item.
 
     Behavior varies according to http method:
-        GET: presents a form that a user can fill out to define a new item
-        POST:  inserts the item defined by the form into the database
+      GET: presents a form that a user can fill out to define a new item
+      POST:  inserts the item defined by the form into the database
     """
     if request.method == 'POST':
         name = request.form['name']
@@ -277,8 +278,11 @@ def itemEdit(item_name):
     """Displays a form to update an item or updates the item in the database
 
     Behavior varies according to http method
-        GET: Presents the form that can be used to update item details
-        POST: Takes values from the form and updates the item in the database
+      GET: Presents the form that can be used to update item details
+      POST: Takes values from the form and updates the item in the database
+
+    Args:
+      item_name: String. The name of the item on the page before clicking edit.
     """
     if request.method == 'POST':
         # check if at least one category checked or else try again
@@ -356,11 +360,15 @@ def itemEdit(item_name):
 
 @app.route('/catalog/<string:item_name>/delete', methods=['GET', 'POST'])
 def itemDelete(item_name):
-    """Presents confirmation page to delete an item or deletes the item in the database
+    """Presents confirmation page to delete an item or deletes the item in the
+    database
 
     Behavior varies according to http method
-        GET: Displays a page with the option to confirm deletion of the item
-        POST: Deletes the item in the database and redirects to home
+      GET: Displays a page with the option to confirm deletion of the item
+      POST: Deletes the item in the database and redirects to home
+
+    Args:
+      item_name: String. The name of the item on the page before clicking edit.
     """
     if request.method == 'POST':
         # check that the item exists
@@ -386,12 +394,13 @@ def itemDelete(item_name):
 
 @app.route('/catalog/categoriesEdit', methods=['GET', 'POST'])
 def categoriesEdit():
-    """Presents a form to add or remove categories or performs those functions in the database
+    """Presents a form to add or remove categories or performs those functions
+    in the database
 
     Behavior varies according to http method
-        GET: Shows a form to remove categories via checkbox or manually type in
+      GET: Shows a form to remove categories via checkbox or manually type in
         names of new categories
-        POST: Performs adding or removing categories in the database according
+      POST: Performs adding or removing categories in the database according
         to the form
     """
     if request.method == 'POST':
@@ -441,11 +450,16 @@ def connect():
 def getDBvalues(querystring, params=None, returnOne=False):
     """Connect to database, run query, return values as list. Options available
 
-        querystring: A string representing an SQL query
-        params: Optional. May be a tuple or a singular value. If provided, runs
+    Args:
+      querystring: A string representing an SQL query
+      params: Optional. May be a tuple or a singular value. If provided, runs
         the query with parameters
-        returnOne: Optional. If not provided or False, provides results in a
-        list. If True, provides the first result as a singular value.
+      returnOne: Optional. If not provided or False, provides results in a
+      list. If True, provides the first result as a singular value.
+
+    Returns:
+      The results of running the query which may be altered by the value of
+      returnOne, see above.
     """
 
     DB, dbcursor = connect()
@@ -469,7 +483,15 @@ def getDBvalues(querystring, params=None, returnOne=False):
     return result
 
 def makeTuple(value):
-    """Take a value of any of several types and return that value as a tuple"""
+    """Take a value of any of several types and return that value as a tuple
+
+    Args:
+      value: A value of any type.
+
+    Returns:
+      The same value contained in a tuple. No change if the value is already a
+      tuple.
+    """
     # values of these types fail a direct conversion to tuple.
     if isinstance(value, (int, basestring)):
         atuple = (value,)
@@ -478,7 +500,9 @@ def makeTuple(value):
     return atuple
 
 def getItemCategoriesDict():
-    """Returns a dictionary of items and their fields for easy function argument passing"""
+    """Returns a dictionary of items and their fields for easy function argument
+    passing
+    """
 
     # get all items and descriptions into a dictionary
     querystring = "SELECT * FROM items;"
@@ -496,7 +520,14 @@ def getItemCategoriesDict():
     return itemdictlist
 
 def htmlTable(flatlist, numrows):
-    """Converts a flat list into list of sublists ordered for an HTML table."""
+    """Converts a flat list into list of sublists ordered for an HTML table.
+
+    This is used particularly for passing a list of categories to a page that
+    will display them in a table. This arranges the values into the right order
+    for an HTML table.
+
+    Args:
+      flatlist: a list of values containing singular values"""
     return [flatlist[i::numrows] for i in range(0, numrows)]
 
 if __name__ == '__main__':
