@@ -1,3 +1,4 @@
+<!-- This page borrowed directly from the Udacity course -->
 <html>
 <head>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js">
@@ -6,6 +7,7 @@
   </script>
 </head>
 <body>
+<h1>CATaLOG login</h1>
 <p>Login in order to create items or edit and delete your items.</p>
 <div id="signinButton">
   <span class="g-signin"
@@ -24,6 +26,7 @@ function signInCallback(authResult) {
   if (authResult['code']) {
     // Hide the sign-in button now that the user is authorized
     $('#signinButton').attr('style', 'display: none');
+    $('#result').html('Please wait...') //added. appears after clicking to log in
     // Send the one-time-use code to the server, if the server responds, write a 'login successful' message to the web page and then redirect back to the main restaurants page
     $.ajax({
       type: 'POST',

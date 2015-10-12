@@ -37,12 +37,10 @@ def catalogJSON():
     itemdictlist = getItemCategoriesDict()
     return jsonify(Items=itemdictlist)
 
+# DEBUG function
 @app.route('/check')
 def check():
-    """Function used for DEBUG purposes"""
-    response = gdisconnect()
-    print response
-    return "Check"
+    return 'hello'
 
 # Create anti-forgery state token
 # borrowed from Udacity
@@ -138,7 +136,7 @@ def gconnect():
     output += '<img src="'
     output += login_session['picture']
     output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-    flash("you are now logged in as %s" % login_session['username'])
+    flash("You are now logged in as %s" % login_session['username'])
     print "done!"
     return output
 
