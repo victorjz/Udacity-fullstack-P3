@@ -28,7 +28,12 @@ app = Flask(__name__)
 def categories():
     """Function associated with home page. Displays category links to items"""
     categories = getDBvalues(QUERY_ALL_CAT)
-    return render_template('catalog_page.html', categories=categories)
+
+    # protect the page
+    if login_session.get('username'):
+        return render_template('catalog_page.html', categories=categories)
+    else:
+        return render_template('publiccatalog_page.html', categories=categories)
 
 @app.route('/catalog.json')
 def catalogJSON():
@@ -55,11 +60,33 @@ def showLogin():
     login_session['state'] = state
     return render_template('login.html')
 
+@app.route('/recordlogin')
+def recordLogin():
+    """Called after a user logins to store information in the database"""
+    idquery = "SELECT id FROM users WHERE email=%s"
+    idparams = login_session['email']
+    dbid = getDBvalues(idquery, idparams, True)
+    if dbid: # add already known user's database id to session
+        login_session['dbid'] = dbid
+    else: # create new DB user if logged in user doesn't exist
+        DB, dbcursor = connect()
+        querystring = "INSERT INTO users (name, email) VALUES (%s, %s);"
+        params = (login_session['username'], login_session['email'])
+        dbcursor.execute(querystring, params)
+        DB.commit()
+        DB.close()
+        # make sure to add new db user id to session
+        login_session['dbid'] = getDBvalues(idquery, idparams, True)
+
+    print login_session['dbid']
+    return redirect(url_for('categories'))
+
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     """Checks authentication of login and updates the login state
 
-    This code borrowed directly from Udacity course."""
+    This code borrowed directly from Udacity course.
+    """
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -220,8 +247,12 @@ def itemDetails(item_name):
     # create the dictionary
     itemdict = dict(zip(ITEM_FIELDS, itemresult))
 
-    return render_template(
-        'item_page.html', item=itemdict, itemcattable=cat_table)
+    if login_session.get('username'): # and id of creator matches login
+        return render_template(
+            'item_page.html', item=itemdict, itemcattable=cat_table)
+    else:
+        return render_template(
+            'publicitem_page.html', item=itemdict, itemcattable=cat_table)
 
 @app.route('/catalog/new', methods=['GET', 'POST'])
 def itemNew():

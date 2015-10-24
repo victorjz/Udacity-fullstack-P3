@@ -5,6 +5,13 @@ DROP DATABASE if exists catalog;
 CREATE DATABASE catalog;
 \c catalog;
 
+CREATE TABLE users
+(
+  id serial primary key,
+  name text,
+  email text
+);
+
 CREATE TABLE categories
 (
   name text primary key
@@ -13,7 +20,8 @@ CREATE TABLE categories
 CREATE TABLE items
 (
   name text primary key,
-  description text
+  description text,
+  user_id int references users
 );
 
 CREATE TABLE category_items

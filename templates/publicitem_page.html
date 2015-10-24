@@ -1,0 +1,29 @@
+{% extends "catalog_base.html" %}
+{% block body %}
+
+<h1>{{item['name']}}</h1>
+
+<div>
+<p>{{item['description']}}</p>
+</div>
+
+<br><br>
+
+<p>Appears in categories:</p>
+<table>
+  {% for row in itemcattable %}
+  <tr>
+    {% for column in row %}
+    <td><a href='{{url_for('categoryItems', category_name=column)}}'>{{column}}</a></td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>
+
+<br><br>
+<nav>
+  <!-- actions for logged in users removed -->
+  <a href='{{url_for('categories')}}'>Back to CATaLOG</a><br>
+</nav>
+
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "catalog_base.html" %}
+{% block body %}
+
+<h1>CATaLOG main page</h1>
+
+<div>
+  <ul>
+    {% for i in categories %}
+    <li><a href='{{url_for('categoryItems', category_name=i)}}'>{{i}}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+
+<br><br>
+<nav>
+  <!-- actions for logged in users removed -->
+  <a href='{{url_for('itemAll')}}'>See all items</a><br>
+</nav>
+{% endblock %}

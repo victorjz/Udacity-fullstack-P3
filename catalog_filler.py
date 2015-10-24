@@ -58,13 +58,32 @@ for i in categories:
     i = (i,) # data to insert must be a tuple
     dbcursor.execute(querystring, i)
 
-querystring = "INSERT INTO items VALUES (%s, %s);"
+querystring = "INSERT INTO items (name, description) VALUES (%s, %s);"
 for i in item_desc:
     dbcursor.execute(querystring, i)
 
 querystring = "INSERT INTO category_items VALUES (%s, %s);"
 for i in category_items:
     dbcursor.execute(querystring, i)
+
+DB.commit()
+
+# arbitrarily assign self user information to every other item
+userinfo = ("Victor Zaragoza", "vjzara@gmail.com")
+querystring = "INSERT INTO users (name, email) VALUES (%s, %s);"
+dbcursor.execute(querystring, userinfo)
+DB.commit()
+
+# fetch the newly created user id
+querystring = "SELECT id FROM users WHERE name=%s AND email=%s"
+dbcursor.execute(querystring, userinfo)
+uid = dbcursor.fetchone()
+
+querystring = "UPDATE items SET user_id=%s WHERE name=%s;"
+for i in range(len(items)):
+    if i%2 == 0:
+        params = (uid, items[i])
+        dbcursor.execute(querystring, params)
 
 DB.commit()
 DB.close()
