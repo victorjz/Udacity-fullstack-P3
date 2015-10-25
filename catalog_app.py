@@ -78,7 +78,6 @@ def recordLogin():
         # make sure to add new db user id to session
         login_session['dbid'] = getDBvalues(idquery, idparams, True)
 
-    print login_session['dbid']
     return redirect(url_for('categories'))
 
 @app.route('/gconnect', methods=['POST'])
@@ -247,7 +246,9 @@ def itemDetails(item_name):
     # create the dictionary
     itemdict = dict(zip(ITEM_FIELDS, itemresult))
 
-    if login_session.get('username'): # and id of creator matches login
+    querystring = "SELECT user_id FROM items WHERE name=%s;"
+    item_user_id = getDBvalues(querystring, item_name, True)
+    if login_session.get('dbid') == item_user_id: # item created by login user
         return render_template(
             'item_page.html', item=itemdict, itemcattable=cat_table)
     else:
