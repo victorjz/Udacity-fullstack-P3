@@ -21,7 +21,8 @@ CREATE TABLE items
 (
   name text primary key,
   description text,
-  user_id int references users
+  user_id int references users,
+  img bytea
 );
 
 CREATE TABLE category_items

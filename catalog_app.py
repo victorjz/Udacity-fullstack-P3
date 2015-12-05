@@ -6,7 +6,7 @@ QUERY_ITEM_ONE = "SELECT * FROM items WHERE name=%s;"
 QUERY_ITEM_DESC = "SELECT description FROM items WHERE name=%s;"
 QUERY_ITEM_CAT = "SELECT category FROM category_items WHERE item=%s;"
 QUERY_ALL_CAT = "SELECT name FROM categories ORDER BY name;"
-ITEM_FIELDS = ('name', 'description')
+ITEM_FIELDS = ('name', 'description', 'users', 'img')
 CLIENT_ID = "635118461401-b9i2jr946sit8rlh0qfd6vbbbq8hr04o.apps.googleusercontent.com"
 
 # imports for logging in and anti forgery
@@ -21,6 +21,10 @@ import httplib2
 import json
 from flask import make_response
 import requests
+
+#imports for handling binary data
+from io import BytesIO
+import base64
 
 app = Flask(__name__)
 @app.route('/')
@@ -43,9 +47,16 @@ def catalogJSON():
     return jsonify(Items=itemdictlist)
 
 # DEBUG function
-@app.route('/check')
+@app.route('/check', methods=['GET', 'POST'])
 def check():
-    return 'hello'
+    if request.method == 'POST':
+        return "hello"
+    else: # method is GET
+        output = "<form action='"
+        output += url_for('check')
+        output += "' method='POST'>"
+        output += "<input type='file'><input type='submit' value='Submit'></form>"
+        return output
 
 # Create anti-forgery state token
 # borrowed from Udacity
@@ -246,6 +257,18 @@ def itemDetails(item_name):
     # create the dictionary
     itemdict = dict(zip(ITEM_FIELDS, itemresult))
 
+    # process binary data
+    if itemdict['img']:
+        binfile = BytesIO()
+        binfile.write(itemdict['img'])
+        binfile.seek(0)
+
+        b64file = BytesIO()
+        base64.encode(binfile, b64file)
+        b64file.seek(0)
+        itemdict['img'] = b64file.read() #replace dictionary entry with base64
+
+    # check if logged in user has rights to the item
     querystring = "SELECT user_id FROM items WHERE name=%s;"
     item_user_id = getDBvalues(querystring, item_name, True)
     if login_session.get('dbid') == item_user_id: # item created by login user
