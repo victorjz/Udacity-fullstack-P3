@@ -5,13 +5,20 @@
 
 <p>Item name and description required.</p>
 
-<form action= "{{url_for('itemNew')}}" method = 'POST'>
+<form action= "{{url_for('itemNew')}}" method = 'POST'
+  enctype="multipart/form-data">
 
 <dl>
-  <dt>Enter new name:
-  <dd><input type = 'text' size='80' name = 'name'></p>
-  <dt>Enter new description:
-  <dd><textarea rows='4' cols='80' name = 'description'></textarea></p>
+  <dt>Enter new name:</dt>
+  <dd><input type = 'text' size='80' name = 'name'></p></dd>
+  <dt>Enter new description:</dt>
+  <dd><textarea rows='4' cols='80' name = 'description'></textarea></p></dd>
+  <dt>Enter new image:</dt>
+  <dd>
+    <input type="radio" name="image" checked value="No image">Use no image<br>
+    <input type="radio" name="image" value="New image">Use a new image
+      <input type='file' name='image_file' accept="image/*"><br>
+  </dd>
 </dl>
 
 At least one category required:<br>

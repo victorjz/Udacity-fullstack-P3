@@ -6,7 +6,7 @@ QUERY_ITEM_ONE = "SELECT * FROM items WHERE name=%s;"
 QUERY_ITEM_DESC = "SELECT description FROM items WHERE name=%s;"
 QUERY_ITEM_CAT = "SELECT category FROM category_items WHERE item=%s;"
 QUERY_ALL_CAT = "SELECT name FROM categories ORDER BY name;"
-ITEM_FIELDS = ('name', 'description', 'users', 'img')
+ITEM_FIELDS = ('name', 'description', 'user_id', 'img')
 CLIENT_ID = "635118461401-b9i2jr946sit8rlh0qfd6vbbbq8hr04o.apps.googleusercontent.com"
 
 # imports for logging in and anti forgery
@@ -26,6 +26,9 @@ import requests
 from io import BytesIO
 import base64
 
+# for XML endpoint
+import xml.etree.ElementTree as ET
+
 app = Flask(__name__)
 @app.route('/')
 @app.route('/catalog/')
@@ -44,19 +47,32 @@ def catalogJSON():
     """Present page of all items in JSON format"""
     # get all items, descriptions, and categories into a dictionary
     itemdictlist = getItemCategoriesDict()
+    for i in itemdictlist:
+        del i['img'] # remove images as they don't belong
     return jsonify(Items=itemdictlist)
+
+@app.route('/catalog.xml')
+def catalogXML():
+    """Presents page of all items in XML format"""
+    # get all items, descriptions, and categories into a dictionary
+    itemdictlist = getItemCategoriesDict()
+    root = ET.Element('catalog')
+    for i in itemdictlist:
+        del i['img'] # remove images as they don't belong
+        i['categories'] = str(i['categories']) # all attrib must be strings
+        i['user_id'] = str(i['user_id'])
+        ET.SubElement(root, 'item', attrib=i)
+    return app.response_class(ET.tostring(root), mimetype='application/xml')
 
 # DEBUG function
 @app.route('/check', methods=['GET', 'POST'])
 def check():
     if request.method == 'POST':
-        return "hello"
+        binimage = buffer(request.files['image'].read())
+        image = buftob64(binimage)
+        return 'test<img height="200" src="data:image;base64,'+image+'">test'
     else: # method is GET
-        output = "<form action='"
-        output += url_for('check')
-        output += "' method='POST'>"
-        output += "<input type='file'><input type='submit' value='Submit'></form>"
-        return output
+        return render_template("file_test.html")
 
 # Create anti-forgery state token
 # borrowed from Udacity
@@ -203,6 +219,7 @@ def gdisconnect():
         del login_session['username']
         del login_session['email']
         del login_session['picture']
+        del login_session['dbid'] # removing my own created field
 
         # Changed the following lines. Instead of displaying a new page,
         # redirect the user back to the home page with a message
@@ -257,21 +274,13 @@ def itemDetails(item_name):
     # create the dictionary
     itemdict = dict(zip(ITEM_FIELDS, itemresult))
 
-    # process binary data
+    # encode the buffer representing the image to base64
     if itemdict['img']:
-        binfile = BytesIO()
-        binfile.write(itemdict['img'])
-        binfile.seek(0)
-
-        b64file = BytesIO()
-        base64.encode(binfile, b64file)
-        b64file.seek(0)
-        itemdict['img'] = b64file.read() #replace dictionary entry with base64
+        itemdict['img'] = buftob64(itemdict['img'])
 
     # check if logged in user has rights to the item
-    querystring = "SELECT user_id FROM items WHERE name=%s;"
-    item_user_id = getDBvalues(querystring, item_name, True)
-    if login_session.get('dbid') == item_user_id: # item created by login user
+    current_user_id = login_session.get('dbid')
+    if current_user_id and current_user_id == itemdict.get('user_id'):
         return render_template(
             'item_page.html', item=itemdict, itemcattable=cat_table)
     else:
@@ -286,15 +295,21 @@ def itemNew():
       GET: presents a form that a user can fill out to define a new item
       POST:  inserts the item defined by the form into the database
     """
+    # this is only available for logged in users
+    if not login_session.get('username'):
+        flash("Error. The page requested is only available for logged in users.")
+        return redirect(url_for('categories'))
+
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
+        image = request.form['image']
         categories = request.form.getlist('categories')
 
-        # check if all form elements filled and if not redirect
+        # check if required form elements filled and if not redirect
         formgood = name and description and categories
         if not formgood:
-            flash("Error. All form fields should have a value.")
+            flash("Error. Name, description, and category required.")
             return redirect(url_for('itemNew'))
 
         # check if item name is unique
@@ -305,9 +320,15 @@ def itemNew():
         # only reach here if all form fields filled in and name unique
         DB, dbcursor = connect()
 
+        # obtain image, if any
+        if image == "New image":
+            binimage = buffer(request.files['image_file'].read())
+        else:
+            binimage = None
+
         # create item
-        querystring = "INSERT INTO items VALUES (%s, %s);"
-        params = (name, description)
+        querystring = "INSERT INTO items VALUES (%s, %s, %s, %s);"
+        params = (name, description, login_session.get('dbid'), binimage)
         dbcursor.execute(querystring, params)
 
         # associate item with selected categories
@@ -337,6 +358,13 @@ def itemEdit(item_name):
     Args:
       item_name: String. The name of the item on the page before clicking edit.
     """
+    # this is only available for the user that created the item
+    owner = getDBvalues("SELECT user_id FROM items WHERE name=%s", item_name, True)
+    current_user_id = login_session.get('dbid')
+    if not current_user_id or current_user_id != owner:
+        flash("Error. Editing is only available for the user that created the item.")
+        return redirect(url_for('categories'))
+
     if request.method == 'POST':
         # check if at least one category checked or else try again
         if not request.form.getlist('categories'):
@@ -346,6 +374,7 @@ def itemEdit(item_name):
         # gather other form elements and check for unique item name
         item_update = request.form['name']
         desc_update = request.form['description']
+        img_update = request.form['image']
         if item_update: # only check if the form was not blank
             if getDBvalues(QUERY_ITEM_ONE, item_update):
                 flash("Error. An item with that name already exists.")
@@ -381,6 +410,18 @@ def itemEdit(item_name):
             params = (desc_update, item_name)
             dbcursor.execute(querystring, params)
 
+        # update item image if the right form field is selected
+        if img_update == "New image":
+            querystring = "UPDATE items SET img=%s WHERE name=%s;"
+            binimage = buffer(request.files['image_file'].read())
+            params = (binimage, item_name)
+            dbcursor.execute(querystring, params)
+
+        if img_update == "No image":
+            querystring = "UPDATE items SET img=%s WHERE name=%s;"
+            params = (None, item_name)
+            dbcursor.execute(querystring, params)
+
         # update item name if form field is filled in; cascades dependent table
         if item_update:
             querystring = "UPDATE items SET name=%s WHERE name=%s;"
@@ -404,6 +445,10 @@ def itemEdit(item_name):
         itemdict = dict(zip(ITEM_FIELDS, itemresult))
         itemdict['categories'] = getDBvalues(QUERY_ITEM_CAT, item_name)
 
+        # make the image compatible
+        if itemdict['img']:
+            itemdict['img'] = buftob64(itemdict['img'])
+
         # fetch the categories as a table to display as checkboxes
         categories = getDBvalues(QUERY_ALL_CAT)
         cat_table = htmlTable(categories, min(5, len(categories)))
@@ -423,6 +468,12 @@ def itemDelete(item_name):
     Args:
       item_name: String. The name of the item on the page before clicking edit.
     """
+    owner = getDBvalues("SELECT user_id FROM items WHERE name=%s", item_name, True)
+    current_user_id = login_session.get('dbid')
+    if not current_user_id or current_user_id != owner:
+        flash("Error. Deleting is only available for the user that created the item.")
+        return redirect(url_for('categories'))
+
     if request.method == 'POST':
         # check that the item exists
         if not getDBvalues(QUERY_ITEM_ONE, item_name):
@@ -456,6 +507,11 @@ def categoriesEdit():
       POST: Performs adding or removing categories in the database according
         to the form
     """
+    # this is only available for logged in users
+    if not login_session.get('username'):
+        flash("Error. The page requested is only available for logged in users.")
+        return redirect(url_for('categories'))
+
     if request.method == 'POST':
         all_cat = getDBvalues(QUERY_ALL_CAT) # all categories
         keep_cat = request.form.getlist('categories') # categories to keep
@@ -582,6 +638,26 @@ def htmlTable(flatlist, numrows):
     Args:
       flatlist: a list of values containing singular values"""
     return [flatlist[i::numrows] for i in range(0, numrows)]
+
+def buftob64(abuffer):
+    """Encodes an instance of buffer data type into base64.
+
+    Buffers are used in this app to store the binary representation of files.
+    Images cannot be displayed in HTML while in this format. Converting to
+    base64 allows hard coding the image into HTML for display.
+
+    Args:
+        abuffer: A buffer representing the file in binary format."""
+
+    binfile = BytesIO() # create a new buffer and handle like a file
+    binfile.write(abuffer)
+    binfile.seek(0) # reset the file cursor to be read from the beginning
+
+    b64file = BytesIO()
+    base64.encode(binfile, b64file)
+    b64file.seek(0)
+
+    return b64file.read()
 
 if __name__ == '__main__':
     app.secret_key = 'r5Sb35U-kE24aNrF55ee9MK0'

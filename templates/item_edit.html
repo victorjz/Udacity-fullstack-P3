@@ -6,7 +6,8 @@
 
 <p>If a new value is not entered, current value will be retained.</p>
 
-<form action= "{{url_for('itemEdit', item_name=item['name'])}}" method = 'POST'>
+<form action= "{{url_for('itemEdit', item_name=item['name'])}}"
+  method = 'POST' enctype="multipart/form-data">
 
 <dl>
   <dt>Enter new name:</dt>
@@ -14,6 +15,20 @@
   <br>
   <dt>Enter new description:</dt>
   <dd><textarea rows='4' cols='80' name = 'description' placeholder = '{{item['description']}}'></textarea></dd>
+  <dt>Enter new image:</dt>
+  <dd>
+    {% if item['img'] %}
+      <input type="radio" name="image" checked value="No change">Keep current image
+        <img alt="Oops. There was a problem with displaying the image."
+          height="200" src="data:image;base64,{{item['img']}}">
+      <br>
+      <input type="radio" name="image" value="No image">Use no image<br>
+    {% else %}
+      <input type="radio" name="image" checked value="No image">Use no image<br>
+    {% endif %}
+    <input type="radio" name="image" value="New image">Use a new image
+      <input type='file' name='image_file' accept="image/*"><br>
+  </dd>
 </dl>
 
 <p>
