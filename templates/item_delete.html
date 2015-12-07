@@ -9,6 +9,7 @@
   Click the button to confirm deletion of the item named {{item}}:
   <input type='submit' value='Delete'>
 </p>
+<input type='hidden' name='state' value={{state}}>
 </form>
 <a href= '{{url_for('itemDetails', item_name=item)}}'>Cancel</a>
 

@@ -7,7 +7,8 @@ QUERY_ITEM_DESC = "SELECT description FROM items WHERE name=%s;"
 QUERY_ITEM_CAT = "SELECT category FROM category_items WHERE item=%s;"
 QUERY_ALL_CAT = "SELECT name FROM categories ORDER BY name;"
 ITEM_FIELDS = ('name', 'description', 'user_id', 'img')
-CLIENT_ID = "635118461401-b9i2jr946sit8rlh0qfd6vbbbq8hr04o.apps.googleusercontent.com"
+#CLIENT_ID = "635118461401-b9i2jr946sit8rlh0qfd6vbbbq8hr04o.apps.googleusercontent.com"
+
 
 # imports for logging in and anti forgery
 from flask import session as login_session
@@ -21,6 +22,8 @@ import httplib2
 import json
 from flask import make_response
 import requests
+CLIENT_ID = json.loads(
+    open('client_secrets.json', 'r').read())['web']['client_id']
 
 #imports for handling binary data
 from io import BytesIO
@@ -475,6 +478,12 @@ def itemDelete(item_name):
         return redirect(url_for('categories'))
 
     if request.method == 'POST':
+        # Validate state token for CSRF
+        if request.form['state'] != login_session['state']:
+            response = make_response(json.dumps('Invalid state parameter.'), 401)
+            response.headers['Content-Type'] = 'application/json'
+            return response
+
         # check that the item exists
         if not getDBvalues(QUERY_ITEM_ONE, item_name):
             flash("The item you tried to delete doesn't exist.")
@@ -494,7 +503,8 @@ def itemDelete(item_name):
             flash("The item you tried to delete doesn't exist.")
             return redirect(url_for('categories'))
         else:
-            return render_template('item_delete.html', item=item_name)
+            return render_template('item_delete.html', item=item_name,
+                state=login_session.get('state')) # pass state for CSRF
 
 @app.route('/catalog/categoriesEdit', methods=['GET', 'POST'])
 def categoriesEdit():
