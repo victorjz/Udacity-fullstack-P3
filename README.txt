@@ -13,6 +13,15 @@ SQLAlchemy nor any other ORM were used for database operations.  The Python
 postgres API was used throughout.  As a result, custom functions were written to
 reduce repeating code, all commented appropriately.
 
+To run this program:
+Execute:
+> psql -f catalog_items.sql
+> python catalog_app.py
+And if you would like sample data pre-populated, execute:
+> python catalog_filler.py
+Open the browser and navigate to localhost:8000
+Read on further for the links and functions available
+
 The following information should help the reviewer identify where the functions
 that are required for the assignment are located, as well as where additional
 features "exceeding specifications" are located, marked by a *.
@@ -26,7 +35,8 @@ http://localhost:8000/
 http://localhost:8000/catalog/
 -Home page
 -Features links to different available categories
--Links at bottom offer all items view, categories edit for logged in users
+*Link at bottom offer all items view
+*Link at the bottom for categories edit for logged in users
 
 http://localhost:8000/catalog/<category>/items
 (The name of the category clicked replaces <category> in the above URL)
@@ -45,10 +55,12 @@ http://localhost:8000/catalog/<item>/edit
 (The name of the item clicked replaces <item> in the above URL)
 -A field for item name, item description
 --If either field is left blank, values will not change
--A table of checkboxes for every category with checks for categories to which
+*A table of checkboxes for every category with checks for categories to which
  the item belongs
 --Values that are checked will be associated with the item
 --Values that are unchecked will be removed from being associated with the item
+*A short form for adding an image will appear differently according to whether
+ the item already has an item
 -Clicking the submit button will record changes in fields and checkboxes
 -Links at the bottom will cancel changes are return to the item details, link to
   return to the homepage
@@ -60,14 +72,20 @@ http://localhost:8000/catalog/<item>/delete
   return to the homepage
 
 http://localhost:8000/catalog/items
+*This page provides an extra view not specified in requirements
 -Table of links for categories and items belonging to each category
--Link for JSON export
+-Link for JSON endpoint
+*Link for XML endpoint
 -Link at the end directs the user back to the home page
 
 http://localhost:8000/catalog.json
--JSON export
+-JSON endpoint
+
+http://localhost:8000/catalog.xml
+*XML endpoint
 
 http://localhost:8000/catalog/categoriesEdit
+*This page provides extra functions not specified in requirements
 -Allows for changing the available categories on the home page
 -Table of checkboxes features current categories
 --Unchecking checkboxes will remove categories upon clicking submit button

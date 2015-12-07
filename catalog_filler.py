@@ -68,7 +68,7 @@ for i in category_items:
 
 DB.commit()
 
-# arbitrarily assign self user information to every other item
+# arbitrarily assign self user information to every item
 userinfo = ("Victor Zaragoza", "vjzara@gmail.com")
 querystring = "INSERT INTO users (name, email) VALUES (%s, %s);"
 dbcursor.execute(querystring, userinfo)
@@ -81,9 +81,16 @@ uid = dbcursor.fetchone()
 
 querystring = "UPDATE items SET user_id=%s WHERE name=%s;"
 for i in range(len(items)):
-    if i%2 == 0:
-        params = (uid, items[i])
-        dbcursor.execute(querystring, params)
+    params = (uid, items[i])
+    dbcursor.execute(querystring, params)
+
+# add images for certain items
+querystring = "UPDATE items SET img=%s WHERE name=%s;"
+item_filenames = ['PS4.png', 'Megaboom.png', 'scoop.png', 'camera.png']
+item_pairing = [0, 1, 3, 7]
+for f,i in zip(item_filenames, item_pairing):
+    params = (buffer(open('./test_assets/'+f).read()), items[i])
+    dbcursor.execute(querystring, params)
 
 DB.commit()
 DB.close()

@@ -7,8 +7,6 @@ QUERY_ITEM_DESC = "SELECT description FROM items WHERE name=%s;"
 QUERY_ITEM_CAT = "SELECT category FROM category_items WHERE item=%s;"
 QUERY_ALL_CAT = "SELECT name FROM categories ORDER BY name;"
 ITEM_FIELDS = ('name', 'description', 'user_id', 'img')
-#CLIENT_ID = "635118461401-b9i2jr946sit8rlh0qfd6vbbbq8hr04o.apps.googleusercontent.com"
-
 
 # imports for logging in and anti forgery
 from flask import session as login_session
