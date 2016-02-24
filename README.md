@@ -35,6 +35,7 @@ http://ec2-52-34-191-106.us-west-2.compute.amazonaws.com/
 * timezone is UTC-0
 * ufw (firewall) allows only ports 2200, 80, 123
 * added localhost definitions to /etc/hosts
+* changed permission of `.git` directory in application code directory to 750 to deny permissions
 
 #### Changes made to application code
 These changes necessary for program to run on hosted server
