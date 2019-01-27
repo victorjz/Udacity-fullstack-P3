@@ -1,7 +1,7 @@
 # Udacity fullstack nanodegree Project 5
 February 2016
 
-Prepared by Victor Zaragoza vjzara@gmail.com
+Prepared by Victor Zaragoza
 
 This file describes the process of completing the course project described [here][1].
 
