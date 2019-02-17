@@ -72,12 +72,12 @@ is featured for user login.  The link changes for logged in users to log out.
 `http://localhost:8000/catalog/<item>`
 (The name of the item clicked replaces `<item>` in the above URL)
 - Features a table of links for every category to which the item belongs
-- Links for editing and deleting the item will appear for a logged in user if the user created the item
+- Links for editing and deleting the item will appear for a **logged in user if the user created the item**
 - Link at the end directs the user back to the home page
 
 `http://localhost:8000/catalog/<item>/edit`
 (The name of the item clicked replaces `<item>` in the above URL)
-- Requires login
+- **Requires login**
 - A field for item name, item description
     - If either field is left blank, values will not change
 - A table of checkboxes for every category
@@ -89,6 +89,7 @@ is featured for user login.  The link changes for logged in users to log out.
 
 `http://localhost:8000/catalog/<item>/delete`
 (The name of the item clicked replaces `<item>` in the above URL)
+- **Requires login**
 - Clicking the submit button will remove the item from the catalog
 - Links at the bottom will cancel changes and return to the item details
 
@@ -105,6 +106,7 @@ is featured for user login.  The link changes for logged in users to log out.
 - XML endpoint
 
 `http://localhost:8000/catalog/categoriesEdit`
+- **Requires login**
 - Allows for changing the available categories on the home page
 - Table of checkboxes features current categories
     - Unchecking checkboxes will remove categories upon clicking submit button

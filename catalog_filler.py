@@ -85,12 +85,12 @@ for i in range(len(items)):
     dbcursor.execute(querystring, params)
 
 # add images for certain items
-querystring = "UPDATE items SET img=%s WHERE name=%s;"
-item_filenames = ['PS4.png', 'Megaboom.png', 'scoop.png', 'camera.png']
-item_pairing = [0, 1, 3, 7]
-for f,i in zip(item_filenames, item_pairing):
-    params = (buffer(open('./test_assets/'+f).read()), items[i])
-    dbcursor.execute(querystring, params)
+# querystring = "UPDATE items SET img=%s WHERE name=%s;"
+# item_filenames = ['PS4.png', 'Megaboom.png', 'scoop.png', 'camera.png']
+# item_pairing = [0, 1, 3, 7]
+# for f,i in zip(item_filenames, item_pairing):
+#     params = (buffer(open('./test_assets/'+f).read()), items[i])
+#     dbcursor.execute(querystring, params)
 
 DB.commit()
 DB.close()
